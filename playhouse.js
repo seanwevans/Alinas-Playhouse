@@ -2,6 +2,12 @@ import * as THREE from "https://esm.sh/three";
 import * as CANNON from "https://esm.sh/cannon-es";
 import { OrbitControls } from "https://esm.sh/three/addons/controls/OrbitControls.js";
 import { World } from "https://esm.sh/miniplex";
+import {
+  chairRecipe,
+  deskRecipe,
+  stoolRecipe,
+  stairsRecipe
+} from "./src/world/recipes/environmentRecipes.js";
 
 const PARAMS = {
   Player: {
@@ -164,6 +170,11 @@ const Input = {
   mousePos: new THREE.Vector2()
 };
 
+const SHADOW_DEFAULTS = {
+  cast: true,
+  receive: true
+};
+
 function copyCannonVec3ToThree(target, source) {
   target.set(source.x, source.y, source.z);
 }
@@ -177,6 +188,24 @@ function distanceCannonToThree(cannonVec, threeVec) {
   const dy = cannonVec.y - threeVec.y;
   const dz = cannonVec.z - threeVec.z;
   return Math.sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+function makeStandardMaterial(color, options = {}) {
+  return new THREE.MeshStandardMaterial({ color, ...options });
+}
+
+function applyShadowDefaults(mesh, overrides = {}) {
+  const cast =
+    overrides.castShadow === undefined
+      ? SHADOW_DEFAULTS.cast
+      : overrides.castShadow;
+  const receive =
+    overrides.receiveShadow === undefined
+      ? SHADOW_DEFAULTS.receive
+      : overrides.receiveShadow;
+
+  mesh.castShadow = cast;
+  mesh.receiveShadow = receive;
 }
 
 document.addEventListener("keydown", (e) => {
@@ -907,12 +936,11 @@ function buildStaticBox(
 ) {
   const mesh = new THREE.Mesh(
     new THREE.BoxGeometry(width, height, depth),
-    new THREE.MeshStandardMaterial({ color })
+    makeStandardMaterial(color)
   );
 
   mesh.position.set(x, y, z);
-  mesh.castShadow = castShadow;
-  mesh.receiveShadow = true;
+  applyShadowDefaults(mesh, { castShadow });
   scene.add(mesh);
 
   const body = new CANNON.Body({
@@ -924,6 +952,35 @@ function buildStaticBox(
   world.addBody(body);
 
   return { mesh, body };
+}
+
+function buildFromRecipe(scene, world, recipe, baseTransform = {}) {
+  const baseX = baseTransform.x ?? 0;
+  const baseY = baseTransform.y ?? 0;
+  const baseZ = baseTransform.z ?? 0;
+  const defaultColor = baseTransform.color;
+  const resolveColor = baseTransform.resolveColor;
+
+  recipe.forEach((part) => {
+    const color =
+      part.color ??
+      (part.colorKey && resolveColor ? resolveColor(part.colorKey) : undefined) ??
+      defaultColor;
+    if (!color) return;
+
+    buildStaticBox(
+      scene,
+      world,
+      part.width,
+      part.height,
+      part.depth,
+      baseX + part.x,
+      baseY + part.y,
+      baseZ + part.z,
+      color,
+      part.castShadow
+    );
+  });
 }
 
 function buildUpstairsBox(
@@ -961,30 +1018,16 @@ function buildUpstairsBox(
 
 function buildChair(scene, world, x, z, color, rotationY) {
   const group = new THREE.Group();
-  const mat = new THREE.MeshStandardMaterial({ color });
-
-  const seat = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 0.8), mat);
-  seat.position.y = 0.8;
-  seat.castShadow = true;
-  seat.receiveShadow = true;
-  group.add(seat);
-
-  [
-    [-0.32, -0.32],
-    [0.32, -0.32],
-    [-0.32, 0.32],
-    [0.32, 0.32]
-  ].forEach((pos) => {
-    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.8, 0.12), mat);
-    leg.position.set(pos[0], 0.4, pos[1]);
-    leg.castShadow = true;
-    group.add(leg);
+  const mat = makeStandardMaterial(color);
+  chairRecipe.forEach((part) => {
+    const piece = new THREE.Mesh(
+      new THREE.BoxGeometry(part.width, part.height, part.depth),
+      mat
+    );
+    piece.position.set(part.x, part.y, part.z);
+    applyShadowDefaults(piece);
+    group.add(piece);
   });
-
-  const back = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.9, 0.15), mat);
-  back.position.set(0, 1.35, -0.325);
-  back.castShadow = true;
-  group.add(back);
 
   group.position.set(x, 0, z);
   group.rotation.y = rotationY;
@@ -1011,12 +1054,12 @@ function buildEnvironment(ecs, scene, world) {
   const createFloor = (color, x) => {
     const mesh = new THREE.Mesh(
       new THREE.PlaneGeometry(20, 20),
-      new THREE.MeshStandardMaterial({ color })
+      makeStandardMaterial(color)
     );
 
     mesh.rotation.x = -Math.PI / 2;
     mesh.position.set(x, 0, 0);
-    mesh.receiveShadow = true;
+    applyShadowDefaults(mesh, { castShadow: false, receiveShadow: true });
     scene.add(mesh);
   };
 
@@ -1073,18 +1116,18 @@ function buildEnvironment(ecs, scene, world) {
 
   const rug = new THREE.Mesh(
     new THREE.BoxGeometry(6, 0.04, 8),
-    new THREE.MeshStandardMaterial({ color: COLORS.rug })
+    makeStandardMaterial(COLORS.rug)
   );
 
   rug.position.set(0, 0.02, 0);
-  rug.receiveShadow = true;
+  applyShadowDefaults(rug, { castShadow: false, receiveShadow: true });
   scene.add(rug);
 
   buildChair(scene, world, 4, 1.5, COLORS.chairBlue, Math.PI);
   buildChair(scene, world, 4, -1.5, COLORS.chairBlue, 0);
 
   const lampGrp = new THREE.Group();
-  const baseMat = new THREE.MeshStandardMaterial({ color: COLORS.lampBase });
+  const baseMat = makeStandardMaterial(COLORS.lampBase);
 
   const base = new THREE.Mesh(
     new THREE.CylinderGeometry(0.6, 0.6, 0.2, 16),
@@ -1233,26 +1276,10 @@ function buildEnvironment(ecs, scene, world) {
       const x = 14.5 + col * 5.5;
       const z = -2 + row * 5;
 
-      buildStaticBox(scene, world, 1.8, 0.1, 1.5, x, 1.2, z, COLORS.deskTop);
-      buildStaticBox(scene, world, 1.8, 0.4, 1.3, x, 1.0, z, COLORS.deskWood);
-
-      [
-        [-0.9, -0.6],
-        [0.9, -0.6],
-        [-0.9, 0.6],
-        [0.9, 0.6]
-      ].forEach((pos) => {
-        buildStaticBox(
-          scene,
-          world,
-          0.1,
-          1.2,
-          0.1,
-          x + pos[0],
-          0.6,
-          z + pos[1],
-          COLORS.deskLeg
-        );
+      buildFromRecipe(scene, world, deskRecipe, {
+        x,
+        z,
+        resolveColor: (colorKey) => COLORS[colorKey]
       });
 
       buildChair(scene, world, x, z + 2, COLORS.chairRed, Math.PI);
@@ -1417,45 +1444,18 @@ function buildEnvironment(ecs, scene, world) {
   buildStaticBox(scene, world, 4, 1.4, 2, 41, 0.7, 0, COLORS.counterBase);
   buildStaticBox(scene, world, 4.4, 0.2, 2.4, 41, 1.5, 0, COLORS.counterTop);
 
-  [39.5, 42.5].forEach((sx) => {
-    buildStaticBox(scene, world, 0.8, 0.1, 0.8, sx, 1.0, 1.8, COLORS.stoolSeat);
-
-    [
-      [-0.35, -0.35],
-      [0.35, -0.35],
-      [-0.35, 0.35],
-      [0.35, 0.35]
-    ].forEach((pos) => {
-      buildStaticBox(
-        scene,
-        world,
-        0.1,
-        1.0,
-        0.1,
-        sx + pos[0],
-        0.5,
-        1.8 + pos[1],
-        COLORS.stoolLeg
-      );
-    });
-  });
+  [39.5, 42.5].forEach((sx) =>
+    buildFromRecipe(scene, world, stoolRecipe, {
+      x: sx,
+      z: 1.8,
+      resolveColor: (colorKey) => COLORS[colorKey]
+    })
+  );
 
   const sData = LAYOUT.stairs;
-  for (let i = 0; i < sData.count; i++) {
-    const sx = sData.startX + i * sData.depth;
-    const sy = sData.height / 2 + i * sData.height;
-    const sz = sData.startZ;
-
-    const mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(sData.depth, sData.height, sData.width),
-      new THREE.MeshStandardMaterial({ color: COLORS.stairs })
-    );
-
-    mesh.position.set(sx, sy, sz);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    scene.add(mesh);
-  }
+  buildFromRecipe(scene, world, stairsRecipe(sData), {
+    resolveColor: (colorKey) => COLORS[colorKey]
+  });
 
   const totalDepth = sData.count * sData.depth;
   const totalHeight = sData.count * sData.height;
