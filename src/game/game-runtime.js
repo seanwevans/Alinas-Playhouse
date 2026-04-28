@@ -22,7 +22,7 @@ export function startGameRuntime(game) {
     if (game.destroyed) return;
 
     requestAnimationFrame(animate);
-    runFrame(game);
+    game.animate();
   };
 
   animate();

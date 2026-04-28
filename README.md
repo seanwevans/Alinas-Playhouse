@@ -25,6 +25,15 @@ Then open: <http://localhost:8080>
 
 No build command is required.
 
+## Architecture
+
+- Canonical game composition entry: `playhouse.js` imports `Game` from `src/game/game-bootstrap.js`.
+- Runtime loop and per-frame updates live in `src/game/game-runtime.js`.
+- Lifecycle/event wiring lives in `src/game/game-lifecycle.js`.
+- Render and physics setup is modularized via `src/game/create-render-context.js` and `src/game/create-physics-world.js`.
+- Environment composition is canonical in `src/environment/` (zones + specs + builders).
+- `src/world/` is retained only for legacy artifacts and should not be used for new composition paths.
+
 ## Play
 
 1. Open the deployed URL (or `http://localhost:8080` when running locally).
