@@ -4,169 +4,14 @@ import { OrbitControls } from "https://esm.sh/three/addons/controls/OrbitControl
 import { World } from "https://esm.sh/miniplex";
 import { InputManager } from "./src/core/input.js";
 import { playBonk, playScream } from "./src/audio/effects.js";
-
-const PARAMS = {
-  Player: {
-    moveSpeed: 10,
-    jumpForce: 8,
-    groundedVelocityY: 0.2,
-    turnLerp: 0.15,
-    mass: 1,
-    sitY: -0.4,
-    layY: -0.65,
-    layZ: 0.5,
-    poseLerpSpeed: 0.2,
-    idleLerpSpeed: 0.1,
-    walkAnimSpeedMult: 15,
-    armSwingAmp: 0.6,
-    breathSpeed: 0.002,
-    breathAmp: 0.03
-  },
-  Physics: {
-    gravity: -20,
-    killPlaneY: -50,
-    screamPlaneY: -25,
-    respawnPos: new THREE.Vector3(0, 1, 0),
-    timeStep: 1 / 60,
-    maxSubSteps: 3,
-    friction: 0.1,
-    restitution: 0.1
-  },
-  Camera: {
-    fov: 45,
-    near: 0.01,
-    far: 10000,
-    startPos: new THREE.Vector3(0, 5, 12),
-    minDistance: 12,
-    maxDistance: 12,
-    dampingFactor: 0.05,
-    followLerp: 0.1,
-    targetOffsetY: 1
-  },
-  World: {
-    ambientIntensity: 0.6,
-    dirIntensity: 0.8,
-    interactRadius: 4,
-    upstairsThresholdY: 3.0,
-    upstairsLerp: 0.05,
-    opacityVisible: 1.0,
-    opacityHidden: 0.1,
-    opacityOpaqueReq: 0.95,
-    opacityShadowReq: 0.5,
-    lampIntensityOn: 1.5,
-    lampEmissiveOn: 0.5,
-    pcLightIntensityOn: 0.8,
-    stoveLightIntensityOn: 1.0,
-    stoveEmissiveOn: 0.8,
-    fridgeOpenAngle: -Math.PI / 1.5,
-    fridgeLerp: 0.1,
-    waterOpacity: 0.6
-  }
-};
-
-const COLORS = {
-  bg: "#87CEEB",
-  ambient: "#ffffff",
-  directional: "#ffffff",
-
-  skin: "#ffcc99",
-  pants: "#00bfff",
-  hair: "#8b4513",
-  eye: "#000000",
-  mainPlayerShirt: "#ff1493",
-  studentShirts: [
-    "#ff5733",
-    "#33ff57",
-    "#3357ff",
-    "#f333ff",
-    "#ff33a1",
-    "#33fff5"
-  ],
-
-  floors: ["#ffe4e1", "#e0f7fa", "#faf0e6", "#123456", "#fedcba", "#beeeef"],
-  wallMain: "#b2fba5",
-  wallAlt: "#fffdd0",
-  wallAccent: "#e6e6fa",
-  classFloor: "#2f4f4f",
-
-  bedBase: "#ffb6c1",
-  bedWood: "#8b4513",
-  bedSheet: "#ffffff",
-  bedTrim: "#deb887",
-  rug: "#dda0dd",
-  chairBlue: "#4682b4",
-  lampBase: "#555555",
-  lampShade: "#fffacd",
-  lampLight: "#fffaa3",
-  pcDesk: "#8b4513",
-  pcCase: "#e3dac9",
-  pcScreenOff: "#2b2b2b",
-  pcScreenOn: "#ffffff",
-  pcScreenEmissive: "#00ffff",
-
-  deskPlatform: "#d2b48c",
-  deskBase: "#8b4513",
-  deskTop: "#deb887",
-  deskWood: "#a0522d",
-  deskLeg: "#708090",
-  chairRed: "#cd5c5c",
-
-  kitchenFloor: "#e0e0e0",
-  fridge: "#f5f5f5",
-  fridgeHandle: "#a9a9a9",
-  counterBase: "#8b4513",
-  counterTop: "#dcdcdc",
-  sink: "#87cefa",
-  faucet: "#c0c0c0",
-  water: "#00ffff",
-  stoveWhite: "#f5f5f5",
-  stoveBlack: "#000000",
-  burnerOff: "#4f4f4f",
-  burnerOn: "#ff4500",
-  stoveLight: "#ffaa00",
-  stoolSeat: "#cd853f",
-  stoolLeg: "#a9a9a9",
-
-  stairs: "#a0522d",
-  upstairsFloor: "#f5deb3",
-  upstairsWall: "#dda0dd",
-  upstairsTrimLight: "#8b4513",
-  upstairsTrimDark: "#333333",
-  upstairsTrimBlack: "#111111",
-  upstairsAccentRed: "#dc143c",
-  upstairsAccentWood: "#d2b48c"
-};
-
-const LAYOUT = {
-  walls: { height: 5, thickness: 0.5 },
-  stairs: {
-    count: 20,
-    depth: 0.5,
-    height: 0.25,
-    width: 3,
-    startX: 35,
-    startZ: 4
-  },
-  upstairs: {
-    floorY: 5.0,
-    wallYOffset: 2.5
-  }
-};
-
-function copyCannonVec3ToThree(target, source) {
-  target.set(source.x, source.y, source.z);
-}
-
-function copyThreeVec3ToCannon(target, source) {
-  target.set(source.x, source.y, source.z);
-}
-
-function distanceCannonToThree(cannonVec, threeVec) {
-  const dx = cannonVec.x - threeVec.x;
-  const dy = cannonVec.y - threeVec.y;
-  const dz = cannonVec.z - threeVec.z;
-  return Math.sqrt(dx * dx + dy * dy + dz * dz);
-}
+import { COLORS, LAYOUT, PARAMS } from "./src/config/game-config.js";
+import {
+  copyCannonVec3ToThree,
+  copyThreeVec3ToCannon,
+  distanceCannonToThree,
+  normalize2D,
+  shortestAngleDelta
+} from "./src/core/math.js";
 
 class C_Renderable {
   constructor(mesh) {
@@ -231,6 +76,18 @@ class PlayerInputSystem {
     this.input = input;
   }
 
+  getMovementInput() {
+    let inputX = 0;
+    let inputZ = 0;
+
+    if (this.input.isDown("moveForward")) inputZ -= 1;
+    if (this.input.isDown("moveBackward")) inputZ += 1;
+    if (this.input.isDown("moveLeft")) inputX -= 1;
+    if (this.input.isDown("moveRight")) inputX += 1;
+
+    return { inputX, inputZ };
+  }
+
   update(dt) {
     for (const entity of this.query) {
       if (!entity.controllable.active) continue;
@@ -253,13 +110,7 @@ class PlayerInputSystem {
         player.isLaying = false;
       }
 
-      let inputX = 0;
-      let inputZ = 0;
-
-      if (this.input.isDown("moveForward")) inputZ -= 1;
-      if (this.input.isDown("moveBackward")) inputZ += 1;
-      if (this.input.isDown("moveLeft")) inputX -= 1;
-      if (this.input.isDown("moveRight")) inputX += 1;
+      const { inputX, inputZ } = this.getMovementInput();
 
       if (inputX !== 0 || inputZ !== 0) {
         player.targetRotation = Math.atan2(inputX, inputZ);
@@ -278,17 +129,9 @@ class PlayerInputSystem {
         phys.body.velocity.x = 0;
         phys.body.velocity.z = 0;
       } else {
-        let velocityX = inputX * player.moveSpeed;
-        let velocityZ = inputZ * player.moveSpeed;
-
-        if (inputX !== 0 && inputZ !== 0) {
-          const length = Math.sqrt(inputX * inputX + inputZ * inputZ);
-          velocityX = (inputX / length) * player.moveSpeed;
-          velocityZ = (inputZ / length) * player.moveSpeed;
-        }
-
-        phys.body.velocity.x = velocityX;
-        phys.body.velocity.z = velocityZ;
+        const normalized = normalize2D(inputX, inputZ);
+        phys.body.velocity.x = normalized.x * player.moveSpeed;
+        phys.body.velocity.z = normalized.z * player.moveSpeed;
       }
     }
   }
@@ -333,9 +176,10 @@ class PhysicsSyncSystem {
       copyCannonVec3ToThree(render.mesh.position, phys.body.position);
 
       if (entity.player) {
-        let diff = entity.player.targetRotation - render.mesh.rotation.y;
-        while (diff < -Math.PI) diff += Math.PI * 2;
-        while (diff > Math.PI) diff -= Math.PI * 2;
+        const diff = shortestAngleDelta(
+          render.mesh.rotation.y,
+          entity.player.targetRotation
+        );
         render.mesh.rotation.y += diff * PARAMS.Player.turnLerp;
       }
     }
@@ -347,6 +191,47 @@ class PlayerAnimationSystem {
     this.query = ecs.with("player", "physicsBody");
   }
 
+  lerpLimbRotation(limbs, targetRotationX, lerpSpeed) {
+    limbs.leftLeg.rotation.x = THREE.MathUtils.lerp(
+      limbs.leftLeg.rotation.x,
+      targetRotationX,
+      lerpSpeed
+    );
+    limbs.rightLeg.rotation.x = THREE.MathUtils.lerp(
+      limbs.rightLeg.rotation.x,
+      targetRotationX,
+      lerpSpeed
+    );
+    limbs.leftArm.rotation.x = THREE.MathUtils.lerp(
+      limbs.leftArm.rotation.x,
+      targetRotationX,
+      lerpSpeed
+    );
+    limbs.rightArm.rotation.x = THREE.MathUtils.lerp(
+      limbs.rightArm.rotation.x,
+      targetRotationX,
+      lerpSpeed
+    );
+  }
+
+  lerpPose(player, targetY, targetXRot, targetZ) {
+    player.visualGroup.position.y = THREE.MathUtils.lerp(
+      player.visualGroup.position.y,
+      targetY,
+      PARAMS.Player.poseLerpSpeed
+    );
+    player.visualGroup.rotation.x = THREE.MathUtils.lerp(
+      player.visualGroup.rotation.x,
+      targetXRot,
+      PARAMS.Player.poseLerpSpeed
+    );
+    player.visualGroup.position.z = THREE.MathUtils.lerp(
+      player.visualGroup.position.z,
+      targetZ,
+      PARAMS.Player.poseLerpSpeed
+    );
+  }
+
   update(dt) {
     for (const entity of this.query) {
       const player = entity.player;
@@ -356,22 +241,8 @@ class PlayerAnimationSystem {
 
       if (player.isSitting) {
         player.walkTime = 0;
-        player.visualGroup.position.y = THREE.MathUtils.lerp(
-          player.visualGroup.position.y,
-          PARAMS.Player.sitY,
-          PARAMS.Player.poseLerpSpeed
-        );
-        player.visualGroup.rotation.x = THREE.MathUtils.lerp(
-          player.visualGroup.rotation.x,
-          0,
-          PARAMS.Player.poseLerpSpeed
-        );
-        player.visualGroup.position.z = THREE.MathUtils.lerp(
-          player.visualGroup.position.z,
-          0,
-          PARAMS.Player.poseLerpSpeed
-        );
-
+        this.lerpPose(player, PARAMS.Player.sitY, 0, 0);
+        this.lerpLimbRotation(player.limbs, 0, PARAMS.Player.poseLerpSpeed);
         player.limbs.leftLeg.rotation.x = THREE.MathUtils.lerp(
           player.limbs.leftLeg.rotation.x,
           -Math.PI / 2,
@@ -380,72 +251,14 @@ class PlayerAnimationSystem {
         player.limbs.rightLeg.rotation.x = THREE.MathUtils.lerp(
           player.limbs.rightLeg.rotation.x,
           -Math.PI / 2,
-          PARAMS.Player.poseLerpSpeed
-        );
-        player.limbs.leftArm.rotation.x = THREE.MathUtils.lerp(
-          player.limbs.leftArm.rotation.x,
-          0,
-          PARAMS.Player.poseLerpSpeed
-        );
-        player.limbs.rightArm.rotation.x = THREE.MathUtils.lerp(
-          player.limbs.rightArm.rotation.x,
-          0,
           PARAMS.Player.poseLerpSpeed
         );
       } else if (player.isLaying) {
         player.walkTime = 0;
-        player.visualGroup.position.y = THREE.MathUtils.lerp(
-          player.visualGroup.position.y,
-          PARAMS.Player.layY,
-          PARAMS.Player.poseLerpSpeed
-        );
-        player.visualGroup.rotation.x = THREE.MathUtils.lerp(
-          player.visualGroup.rotation.x,
-          -Math.PI / 2,
-          PARAMS.Player.poseLerpSpeed
-        );
-        player.visualGroup.position.z = THREE.MathUtils.lerp(
-          player.visualGroup.position.z,
-          PARAMS.Player.layZ,
-          PARAMS.Player.poseLerpSpeed
-        );
-
-        player.limbs.leftLeg.rotation.x = THREE.MathUtils.lerp(
-          player.limbs.leftLeg.rotation.x,
-          0,
-          PARAMS.Player.poseLerpSpeed
-        );
-        player.limbs.rightLeg.rotation.x = THREE.MathUtils.lerp(
-          player.limbs.rightLeg.rotation.x,
-          0,
-          PARAMS.Player.poseLerpSpeed
-        );
-        player.limbs.leftArm.rotation.x = THREE.MathUtils.lerp(
-          player.limbs.leftArm.rotation.x,
-          0,
-          PARAMS.Player.poseLerpSpeed
-        );
-        player.limbs.rightArm.rotation.x = THREE.MathUtils.lerp(
-          player.limbs.rightArm.rotation.x,
-          0,
-          PARAMS.Player.poseLerpSpeed
-        );
+        this.lerpPose(player, PARAMS.Player.layY, -Math.PI / 2, PARAMS.Player.layZ);
+        this.lerpLimbRotation(player.limbs, 0, PARAMS.Player.poseLerpSpeed);
       } else {
-        player.visualGroup.position.y = THREE.MathUtils.lerp(
-          player.visualGroup.position.y,
-          0,
-          PARAMS.Player.poseLerpSpeed
-        );
-        player.visualGroup.rotation.x = THREE.MathUtils.lerp(
-          player.visualGroup.rotation.x,
-          0,
-          PARAMS.Player.poseLerpSpeed
-        );
-        player.visualGroup.position.z = THREE.MathUtils.lerp(
-          player.visualGroup.position.z,
-          0,
-          PARAMS.Player.poseLerpSpeed
-        );
+        this.lerpPose(player, 0, 0, 0);
 
         const isMoving = Math.abs(velX) > 0.1 || Math.abs(velZ) > 0.1;
         if (isMoving) {

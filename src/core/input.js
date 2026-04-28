@@ -35,14 +35,10 @@ export class InputManager {
       for (const code of codes) {
         this.codeToAction.set(code, action);
       }
-      this.down.set(action, false);
-      this.pressed.set(action, false);
-      this.released.set(action, false);
+      this.initializeActionState(action);
     }
 
-    this.down.set("mousePrimary", false);
-    this.pressed.set("mousePrimary", false);
-    this.released.set("mousePrimary", false);
+    this.initializeActionState("mousePrimary");
 
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.handleKeyUp = this.handleKeyUp.bind(this);
@@ -65,6 +61,12 @@ export class InputManager {
   }
 
   beginFrame() {}
+
+  initializeActionState(action) {
+    this.down.set(action, false);
+    this.pressed.set(action, false);
+    this.released.set(action, false);
+  }
 
   endFrame() {
     for (const action of this.pressed.keys()) {
