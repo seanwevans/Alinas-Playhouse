@@ -661,6 +661,23 @@ class UpstairsVisibilitySystem {
   }
 }
 
+class EnvironmentInteractionSystem {
+  constructor(handles, params) {
+    this.handles = handles;
+    this.params = params;
+  }
+
+  update() {
+    if (!this.handles.fridgeDoorGrp) return;
+
+    this.handles.fridgeDoorGrp.rotation.y = THREE.MathUtils.lerp(
+      this.handles.fridgeDoorGrp.rotation.y,
+      this.handles.isFridgeOpen ? this.params.World.fridgeOpenAngle : 0,
+      this.params.World.fridgeLerp
+    );
+  }
+}
+
 class CharacterSwitchSystem {
   constructor(ecs, camera, scene) {
     this.camera = camera;
@@ -1007,7 +1024,9 @@ function buildChair(scene, world, x, z, color, rotationY) {
   world.addBody(body);
 }
 
-function buildEnvironment(ecs, scene, world) {
+function buildBedroomZone(ecs, scene, world, config) {
+  const { params } = config;
+
   const createFloor = (color, x) => {
     const mesh = new THREE.Mesh(
       new THREE.PlaneGeometry(20, 20),
@@ -1138,12 +1157,12 @@ function buildEnvironment(ecs, scene, world) {
   ecs.add({
     interactable: new C_Interactable(
       new THREE.Vector3(-8, 0, -8),
-      PARAMS.World.interactRadius,
+      params.World.interactRadius,
       () => {
         isLampOn = !isLampOn;
-        lampLight.intensity = isLampOn ? PARAMS.World.lampIntensityOn : 0;
+        lampLight.intensity = isLampOn ? params.World.lampIntensityOn : 0;
         shade.material.emissiveIntensity = isLampOn
-          ? PARAMS.World.lampEmissiveOn
+          ? params.World.lampEmissiveOn
           : 0;
       }
     )
@@ -1198,17 +1217,22 @@ function buildEnvironment(ecs, scene, world) {
   ecs.add({
     interactable: new C_Interactable(
       new THREE.Vector3(6, 0, -8),
-      PARAMS.World.interactRadius,
+      params.World.interactRadius,
       () => {
         isPcOn = !isPcOn;
         screen.material.color.set(
           isPcOn ? COLORS.pcScreenOn : COLORS.pcScreenOff
         );
         screen.material.emissiveIntensity = isPcOn ? 1 : 0;
-        pcLight.intensity = isPcOn ? PARAMS.World.pcLightIntensityOn : 0;
+        pcLight.intensity = isPcOn ? params.World.pcLightIntensityOn : 0;
       }
     )
   });
+  return {};
+}
+
+function buildClassroomZone(ecs, scene, world, config) {
+  const { gameRef } = config;
 
   buildStaticBox(scene, world, 12, 1.5, 0.1, 20, 2.0, -9.7, COLORS.classFloor);
   buildStaticBox(
@@ -1267,7 +1291,7 @@ function buildEnvironment(ecs, scene, world) {
         Math.PI,
         false,
         true,
-        this
+        gameRef
       );
 
       studentEnt.player.isSitting = true;
@@ -1280,7 +1304,11 @@ function buildEnvironment(ecs, scene, world) {
       studentIdx++;
     }
   }
+  return {};
+}
 
+function buildKitchenZone(ecs, scene, world, config) {
+  const { params } = config;
   buildStaticBox(
     scene,
     world,
@@ -1316,21 +1344,11 @@ function buildEnvironment(ecs, scene, world) {
   ecs.add({
     interactable: new C_Interactable(
       new THREE.Vector3(32.5, 0, -8.5),
-      PARAMS.World.interactRadius,
+      params.World.interactRadius,
       () => {
         isFridgeOpen = !isFridgeOpen;
       }
     )
-  });
-
-  ecs.add({
-    update: () => {
-      fridgeDoorGrp.rotation.y = THREE.MathUtils.lerp(
-        fridgeDoorGrp.rotation.y,
-        isFridgeOpen ? PARAMS.World.fridgeOpenAngle : 0,
-        PARAMS.World.fridgeLerp
-      );
-    }
   });
 
   buildStaticBox(scene, world, 8, 1.5, 2, 39, 0.75, -8.5, COLORS.counterBase);
@@ -1356,7 +1374,7 @@ function buildEnvironment(ecs, scene, world) {
   ecs.add({
     interactable: new C_Interactable(
       new THREE.Vector3(38, 0, -8.5),
-      PARAMS.World.interactRadius,
+      params.World.interactRadius,
       () => {
         isSinkOn = !isSinkOn;
         water.visible = isSinkOn;
@@ -1391,7 +1409,7 @@ function buildEnvironment(ecs, scene, world) {
   ecs.add({
     interactable: new C_Interactable(
       new THREE.Vector3(45, 0, -8.5),
-      PARAMS.World.interactRadius,
+      params.World.interactRadius,
       () => {
         isStoveOn = !isStoveOn;
         burners.forEach((burner, idx) => {
@@ -1408,7 +1426,7 @@ function buildEnvironment(ecs, scene, world) {
           }
         });
         stoveLight.intensity = isStoveOn
-          ? PARAMS.World.stoveLightIntensityOn
+          ? params.World.stoveLightIntensityOn
           : 0;
       }
     )
@@ -1439,8 +1457,12 @@ function buildEnvironment(ecs, scene, world) {
       );
     });
   });
+  return { fridgeDoorGrp, isFridgeOpen };
+}
 
-  const sData = LAYOUT.stairs;
+function buildStaircaseZone(ecs, scene, world, config) {
+  const { layout } = config;
+  const sData = layout.stairs;
   for (let i = 0; i < sData.count; i++) {
     const sx = sData.startX + i * sData.depth;
     const sy = sData.height / 2 + i * sData.height;
@@ -1474,9 +1496,13 @@ function buildEnvironment(ecs, scene, world) {
   );
   rampBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 0, 1), rampAngle);
   world.addBody(rampBody);
+  return {};
+}
 
-  const fy = LAYOUT.upstairs.floorY;
-  const wy = fy + LAYOUT.upstairs.wallYOffset;
+function buildUpstairsZone(ecs, scene, world, config) {
+  const { layout } = config;
+  const fy = layout.upstairs.floorY;
+  const wy = fy + layout.upstairs.wallYOffset;
 
   buildUpstairsBox(
     ecs,
@@ -1672,6 +1698,31 @@ function buildEnvironment(ecs, scene, world) {
     -6,
     COLORS.upstairsAccentWood
   );
+  return {};
+}
+
+function buildEnvironment(ecs, scene, world, config = {}) {
+  const mergedConfig = {
+    params: PARAMS,
+    colors: COLORS,
+    layout: LAYOUT,
+    gameRef: null,
+    ...config
+  };
+
+  const bedroomHandles = buildBedroomZone(ecs, scene, world, mergedConfig);
+  const classroomHandles = buildClassroomZone(ecs, scene, world, mergedConfig);
+  const kitchenHandles = buildKitchenZone(ecs, scene, world, mergedConfig);
+  const staircaseHandles = buildStaircaseZone(ecs, scene, world, mergedConfig);
+  const upstairsHandles = buildUpstairsZone(ecs, scene, world, mergedConfig);
+
+  return {
+    ...bedroomHandles,
+    ...classroomHandles,
+    ...kitchenHandles,
+    ...staircaseHandles,
+    ...upstairsHandles
+  };
 }
 
 function Bonk(audioCtx, impactVelocity) {
@@ -1856,9 +1907,13 @@ class Game {
       new InputCleanupSystem()
     ];
 
-    this.anonSystems = this.ecs.with("update");
-
-    buildEnvironment(this.ecs, this.scene, this.physicsWorld);
+    const environmentHandles = buildEnvironment(
+      this.ecs,
+      this.scene,
+      this.physicsWorld,
+      { gameRef: this }
+    );
+    this.systems.push(new EnvironmentInteractionSystem(environmentHandles, PARAMS));
 
     createPlayerEntity(
       this.ecs,
@@ -1960,10 +2015,6 @@ class Game {
 
     for (const sys of this.systems) {
       sys.update(deltaTime);
-    }
-
-    for (const anon of this.anonSystems) {
-      anon.update(deltaTime);
     }
 
     this.renderer.render(this.scene, this.camera);
