@@ -2,6 +2,7 @@ import * as THREE from "https://esm.sh/three";
 import * as CANNON from "https://esm.sh/cannon-es";
 import { OrbitControls } from "https://esm.sh/three/addons/controls/OrbitControls.js";
 import { World } from "https://esm.sh/miniplex";
+import { playBonk, playScream } from "./src/audio/effects.js";
 
 const PARAMS = {
   Player: {
@@ -391,7 +392,7 @@ class PhysicsSyncSystem {
         ) {
           entity.player.hasScreamed = true;
           if (this.gameRef && this.gameRef.audioCtx) {
-            Scream(this.gameRef.audioCtx);
+            playScream(this.gameRef.audioCtx);
           }
         }
       }
@@ -847,7 +848,7 @@ function createPlayerEntity(
       const impactVelocity = Math.abs(e.contact.getImpactVelocityAlongNormal());
       if (impactVelocity > 1.5) {
         // 1. Play Sound
-        Bonk(gameRef.audioCtx, impactVelocity);
+        playBonk(gameRef.audioCtx, impactVelocity);
 
         // 2. Flash Screen
         triggerScreenFlash();
@@ -1674,29 +1675,6 @@ function buildEnvironment(ecs, scene, world) {
   );
 }
 
-function Bonk(audioCtx, impactVelocity) {
-  if (!audioCtx) return;
-
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-
-  const now = audioCtx.currentTime;
-  const duration = 0.15;
-
-  osc.type = "sine";
-  osc.frequency.setValueAtTime(550, now);
-  osc.frequency.exponentialRampToValueAtTime(50, now + duration);
-
-  const volume = Math.min(impactVelocity / 15, 0.5);
-  gain.gain.setValueAtTime(volume, now);
-  gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
-  osc.start(now);
-  osc.stop(now + duration);
-}
-
 function createBonkSprite() {
   const canvas = document.createElement("canvas");
   canvas.width = 256;
@@ -1744,49 +1722,6 @@ function triggerScreenFlash() {
     flash.style.opacity = "0";
     setTimeout(() => flash.remove(), 200);
   });
-}
-
-function Scream(audioCtx) {
-  if (!audioCtx) return;
-
-  const osc = audioCtx.createOscillator();
-  const lfo = audioCtx.createOscillator(); // Creates the "voice wobble"
-  const lfoGain = audioCtx.createGain();
-  const mainGain = audioCtx.createGain();
-
-  // A sawtooth wave is buzzy and harsh, good for a scream
-  osc.type = "sawtooth";
-  lfo.type = "sine";
-
-  // Wire the LFO to modulate the main oscillator's pitch
-  lfo.connect(lfoGain);
-  lfoGain.connect(osc.frequency);
-
-  // Wire the main oscillator to the speakers
-  osc.connect(mainGain);
-  mainGain.connect(audioCtx.destination);
-
-  const now = audioCtx.currentTime;
-  const duration = 1.5; // Lasts 1.5 seconds
-
-  // 1. Pitch Envelope: Start high (panic) and drop as they fall
-  osc.frequency.setValueAtTime(800, now);
-  osc.frequency.exponentialRampToValueAtTime(300, now + duration);
-
-  // 2. Vibrato (Wobble): 30 wobbles per second, shifting pitch by 50hz
-  lfo.frequency.setValueAtTime(30, now);
-  lfoGain.gain.setValueAtTime(50, now);
-
-  // 3. Volume Envelope: Ramp up fast, hold, then fade out
-  mainGain.gain.setValueAtTime(0, now);
-  mainGain.gain.linearRampToValueAtTime(0.2, now + 0.1);
-  mainGain.gain.setValueAtTime(0.2, now + duration - 0.2);
-  mainGain.gain.linearRampToValueAtTime(0.01, now + duration);
-
-  osc.start(now);
-  lfo.start(now);
-  osc.stop(now + duration);
-  lfo.stop(now + duration);
 }
 
 class C_FloatingText {
@@ -1875,16 +1810,6 @@ class Game {
 
     window.addEventListener("resize", () => this.onWindowResize());
     this.animate();
-  }
-  initAudio() {
-    this.audioListener = new THREE.AudioListener();
-    this.camera.add(this.audioListener);
-    this.bonkSound = new THREE.Audio(this.audioListener);
-    const audioLoader = new THREE.AudioLoader();
-    audioLoader.load("path/to/your/bonk.mp3", (buffer) => {
-      this.bonkSound.setBuffer(buffer);
-      this.bonkSound.setVolume(0.5);
-    });
   }
   initThreeAndCannon() {
     this.scene = new THREE.Scene();
