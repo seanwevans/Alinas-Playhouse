@@ -587,17 +587,27 @@ function createPlayerEntity(
 
   body.position.set(x, isDynamic ? 3 : 0.95, z);
   if (isDynamic && gameRef) {
+    let lastBonkAt = 0;
+    const bonkCooldownMs = 200;
+
     body.addEventListener("collide", (e) => {
       const impactVelocity = Math.abs(e.contact.getImpactVelocityAlongNormal());
       if (impactVelocity > 1.5) {
+        const now = performance.now();
+        if (now - lastBonkAt < bonkCooldownMs) return;
+        lastBonkAt = now;
+
+        const impactIntensity = THREE.MathUtils.clamp(impactVelocity / 8, 0.75, 1.6);
+
         // 1. Play Sound
         playBonk(gameRef.audioCtx, impactVelocity);
 
         // 2. Flash Screen
-        triggerScreenFlash();
+        triggerScreenFlash(impactIntensity);
 
         // 3. Spawn 3D "BONK" Text
         const sprite = createBonkSprite();
+        sprite.scale.multiplyScalar(impactIntensity);
         sprite.position.set(
           body.position.x,
           body.position.y + 1.2,
@@ -1479,14 +1489,16 @@ function createBonkSprite() {
   return sprite;
 }
 
-function triggerScreenFlash() {
+function triggerScreenFlash(intensity = 1) {
+  const clampedIntensity = THREE.MathUtils.clamp(intensity, 0.75, 1.6);
+  const alpha = THREE.MathUtils.lerp(0.25, 0.55, (clampedIntensity - 0.75) / 0.85);
   const flash = document.createElement("div");
   flash.style.position = "fixed";
   flash.style.top = "0";
   flash.style.left = "0";
   flash.style.width = "100vw";
   flash.style.height = "100vh";
-  flash.style.backgroundColor = "rgba(255, 0, 0, 0.4)"; // Red tint
+  flash.style.backgroundColor = `rgba(255, 0, 0, ${alpha})`; // Red tint
   flash.style.pointerEvents = "none";
   flash.style.transition = "opacity 0.2s ease-out";
   flash.style.zIndex = "9999";
