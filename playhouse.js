@@ -2,7 +2,7 @@ import * as THREE from "https://esm.sh/three";
 import * as CANNON from "https://esm.sh/cannon-es";
 import { World } from "https://esm.sh/miniplex";
 import { InputManager } from "./src/core/input.js";
-import { playBonk, playScream } from "./src/audio/effects.js";
+import { playScream } from "./src/audio/effects.js";
 import { COLORS, LAYOUT, PARAMS } from "./src/config/game-config.js";
 import { createRenderContext } from "./src/game/create-render-context.js";
 import { createPhysicsWorld } from "./src/game/create-physics-world.js";
@@ -16,6 +16,7 @@ import {
   normalize2D,
   shortestAngleDelta
 } from "./src/core/math.js";
+import { createPlayerEntity } from "./src/entities/player/create-player-entity.js";
 
 class C_Renderable {
   constructor(mesh) {
@@ -486,174 +487,6 @@ class CameraFollowSystem {
   }
 }
 
-function createPlayerEntity(
-  ecs,
-  scene,
-  world,
-  x,
-  z,
-  shirtColor,
-  rotationY,
-  isActive = false,
-  isDynamic = true,
-  gameRef = null
-) {
-  const mesh = new THREE.Group();
-  const visualGroup = new THREE.Group();
-  visualGroup.position.y = 0;
-  mesh.add(visualGroup);
-  scene.add(mesh);
-
-  const limbs = {};
-  const skinMat = new THREE.MeshStandardMaterial({ color: COLORS.skin });
-  const shirtMat = new THREE.MeshStandardMaterial({ color: shirtColor });
-  const pantsMat = new THREE.MeshStandardMaterial({ color: COLORS.pants });
-  const hairMat = new THREE.MeshStandardMaterial({ color: COLORS.hair });
-  const eyeMat = new THREE.MeshStandardMaterial({ color: COLORS.eye });
-
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 16), skinMat);
-  head.position.y = 0.5;
-  head.castShadow = true;
-  visualGroup.add(head);
-
-  const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), eyeMat);
-  leftEye.position.set(-0.12, 0.55, 0.32);
-  visualGroup.add(leftEye);
-
-  const rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), eyeMat);
-  rightEye.position.set(0.12, 0.55, 0.32);
-  visualGroup.add(rightEye);
-
-  const smile = new THREE.Mesh(
-    new THREE.TorusGeometry(0.08, 0.015, 8, 16, Math.PI),
-    eyeMat
-  );
-  smile.position.set(0, 0.46, 0.33);
-  smile.rotation.z = Math.PI;
-  visualGroup.add(smile);
-
-  const hair = new THREE.Mesh(
-    new THREE.SphereGeometry(0.36, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2.5),
-    hairMat
-  );
-  hair.position.y = 0.52;
-  hair.castShadow = true;
-  visualGroup.add(hair);
-
-  const bunGeo = new THREE.SphereGeometry(0.12, 16, 16);
-  const leftBun = new THREE.Mesh(bunGeo, hairMat);
-  leftBun.position.set(-0.32, 0.65, -0.1);
-  visualGroup.add(leftBun);
-
-  const rightBun = new THREE.Mesh(bunGeo, hairMat);
-  rightBun.position.set(0.32, 0.65, -0.1);
-  visualGroup.add(rightBun);
-
-  const torso = new THREE.Mesh(
-    new THREE.CapsuleGeometry(0.22, 0.4, 4, 16),
-    shirtMat
-  );
-  torso.position.y = -0.05;
-  torso.castShadow = true;
-  visualGroup.add(torso);
-
-  const armGeo = new THREE.CapsuleGeometry(0.08, 0.35, 4, 8);
-  armGeo.translate(0, -0.2, 0);
-
-  limbs.leftArm = new THREE.Mesh(armGeo, skinMat);
-  limbs.leftArm.position.set(-0.35, 0.15, 0);
-  limbs.leftArm.rotation.z = -Math.PI / 12;
-  limbs.leftArm.castShadow = true;
-  visualGroup.add(limbs.leftArm);
-
-  limbs.rightArm = new THREE.Mesh(armGeo, skinMat);
-  limbs.rightArm.position.set(0.35, 0.15, 0);
-  limbs.rightArm.rotation.z = Math.PI / 12;
-  limbs.rightArm.castShadow = true;
-  visualGroup.add(limbs.rightArm);
-
-  const legGeo = new THREE.CapsuleGeometry(0.1, 0.4, 4, 8);
-  legGeo.translate(0, -0.25, 0);
-
-  limbs.leftLeg = new THREE.Mesh(legGeo, pantsMat);
-  limbs.leftLeg.position.set(-0.12, -0.35, 0);
-  limbs.leftLeg.castShadow = true;
-  visualGroup.add(limbs.leftLeg);
-
-  limbs.rightLeg = new THREE.Mesh(legGeo, pantsMat);
-  limbs.rightLeg.position.set(0.12, -0.35, 0);
-  limbs.rightLeg.castShadow = true;
-  visualGroup.add(limbs.rightLeg);
-
-  const shape = new CANNON.Box(new CANNON.Vec3(0.3, 0.9, 0.3));
-  const body = new CANNON.Body({
-    mass: isDynamic ? PARAMS.Player.mass : 0,
-    shape,
-    fixedRotation: true
-  });
-
-  body.position.set(x, isDynamic ? 3 : 0.95, z);
-  if (isDynamic && gameRef) {
-    let lastBonkAt = 0;
-    const bonkCooldownMs = 200;
-
-    body.addEventListener("collide", (e) => {
-      const impactVelocity = Math.abs(e.contact.getImpactVelocityAlongNormal());
-      if (impactVelocity > 1.5) {
-        const now = performance.now();
-        if (now - lastBonkAt < bonkCooldownMs) return;
-        lastBonkAt = now;
-
-        const impactIntensity = THREE.MathUtils.clamp(impactVelocity / 8, 0.75, 1.6);
-
-        // 1. Play Sound
-        playBonk(gameRef.audioCtx, impactVelocity);
-
-        // 2. Flash Screen
-        triggerScreenFlash(impactIntensity);
-
-        // 3. Spawn 3D "BONK" Text
-        const sprite = createBonkSprite();
-        sprite.scale.multiplyScalar(impactIntensity);
-        sprite.position.set(
-          body.position.x,
-          body.position.y + 1.2,
-          body.position.z
-        );
-        gameRef.scene.add(sprite);
-
-        // Add to ECS so the new system animates and destroys it
-        gameRef.ecs.add({
-          floatingText: new C_FloatingText(sprite, 0.8) // 0.8 seconds duration
-        });
-      }
-    });
-  }
-  world.addBody(body);
-
-  mesh.rotation.y = rotationY;
-
-  const entity = ecs.add({
-    renderable: new C_Renderable(mesh),
-    physicsBody: new C_PhysicsBody(body),
-    player: new C_Player(
-      visualGroup,
-      limbs,
-      PARAMS.Player.moveSpeed,
-      rotationY
-    ),
-    controllable: new C_Controllable(isActive)
-  });
-
-  mesh.userData.entity = entity;
-  visualGroup.userData.entity = entity;
-  visualGroup.traverse((child) => {
-    if (child.isMesh) child.userData.entity = entity;
-  });
-
-  return entity;
-}
-
 function buildStaticBox(
   scene,
   world,
@@ -1025,18 +858,30 @@ function buildClassroomZone(ecs, scene, world, config) {
 
       buildChair(scene, world, x, z + 2, COLORS.chairRed, Math.PI);
 
-      const studentEnt = createPlayerEntity(
+      const studentEnt = createPlayerEntity({
         ecs,
         scene,
         world,
         x,
-        z + 1,
-        COLORS.studentShirts[studentIdx],
-        Math.PI,
-        false,
-        true,
-        gameRef
-      );
+        z: z + 1,
+        shirtColor: COLORS.studentShirts[studentIdx],
+        rotationY: Math.PI,
+        isActive: false,
+        isDynamic: true,
+        gameRef,
+        components: {
+          RenderableComponent: C_Renderable,
+          PhysicsBodyComponent: C_PhysicsBody,
+          PlayerComponent: C_Player,
+          ControllableComponent: C_Controllable,
+          playerMoveSpeed: PARAMS.Player.moveSpeed
+        },
+        collisionHelpers: {
+          createBonkSprite,
+          triggerScreenFlash,
+          FloatingTextComponent: C_FloatingText
+        }
+      });
 
       studentEnt.player.isSitting = true;
       ecs.addComponent(
@@ -1590,18 +1435,30 @@ class Game {
       }
     }).systems;
 
-    createPlayerEntity(
-      this.ecs,
-      this.scene,
-      this.physicsWorld,
-      0,
-      0,
-      COLORS.mainPlayerShirt,
-      0,
-      true,
-      true,
-      this
-    );
+    createPlayerEntity({
+      ecs: this.ecs,
+      scene: this.scene,
+      world: this.physicsWorld,
+      x: 0,
+      z: 0,
+      shirtColor: COLORS.mainPlayerShirt,
+      rotationY: 0,
+      isActive: true,
+      isDynamic: true,
+      gameRef: this,
+      components: {
+        RenderableComponent: C_Renderable,
+        PhysicsBodyComponent: C_PhysicsBody,
+        PlayerComponent: C_Player,
+        ControllableComponent: C_Controllable,
+        playerMoveSpeed: PARAMS.Player.moveSpeed
+      },
+      collisionHelpers: {
+        createBonkSprite,
+        triggerScreenFlash,
+        FloatingTextComponent: C_FloatingText
+      }
+    });
 
     this.destroyed = false;
     registerGameLifecycle(this);
