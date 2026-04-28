@@ -2,6 +2,7 @@ import * as THREE from "https://esm.sh/three";
 import * as CANNON from "https://esm.sh/cannon-es";
 import { OrbitControls } from "https://esm.sh/three/addons/controls/OrbitControls.js";
 import { World } from "https://esm.sh/miniplex";
+import { InputManager } from "./src/core/input.js";
 import { playBonk, playScream } from "./src/audio/effects.js";
 
 const PARAMS = {
@@ -152,19 +153,6 @@ const LAYOUT = {
   }
 };
 
-const Input = {
-  forward: false,
-  backward: false,
-  left: false,
-  right: false,
-  jump: false,
-  sit: false,
-  lay: false,
-  interact: false,
-  mouseClicked: false,
-  mousePos: new THREE.Vector2()
-};
-
 function copyCannonVec3ToThree(target, source) {
   target.set(source.x, source.y, source.z);
 }
@@ -179,74 +167,6 @@ function distanceCannonToThree(cannonVec, threeVec) {
   const dz = cannonVec.z - threeVec.z;
   return Math.sqrt(dx * dx + dy * dy + dz * dz);
 }
-
-document.addEventListener("keydown", (e) => {
-  if (
-    ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(
-      e.code
-    )
-  ) {
-    e.preventDefault();
-  }
-
-  switch (e.code) {
-    case "ArrowUp":
-    case "KeyW":
-      Input.forward = true;
-      break;
-    case "ArrowDown":
-    case "KeyS":
-      Input.backward = true;
-      break;
-    case "ArrowLeft":
-    case "KeyA":
-      Input.left = true;
-      break;
-    case "ArrowRight":
-    case "KeyD":
-      Input.right = true;
-      break;
-    case "Space":
-      Input.jump = true;
-      break;
-    case "KeyE":
-      Input.sit = true;
-      break;
-    case "KeyQ":
-      Input.lay = true;
-      break;
-    case "KeyF":
-      Input.interact = true;
-      break;
-  }
-});
-
-document.addEventListener("keyup", (e) => {
-  switch (e.code) {
-    case "ArrowUp":
-    case "KeyW":
-      Input.forward = false;
-      break;
-    case "ArrowDown":
-    case "KeyS":
-      Input.backward = false;
-      break;
-    case "ArrowLeft":
-    case "KeyA":
-      Input.left = false;
-      break;
-    case "ArrowRight":
-    case "KeyD":
-      Input.right = false;
-      break;
-  }
-});
-
-window.addEventListener("mousedown", (e) => {
-  Input.mouseClicked = true;
-  Input.mousePos.x = (e.clientX / window.innerWidth) * 2 - 1;
-  Input.mousePos.y = -(e.clientY / window.innerHeight) * 2 + 1;
-});
 
 class C_Renderable {
   constructor(mesh) {
@@ -306,8 +226,9 @@ class C_StudentAnimator {
 }
 
 class PlayerInputSystem {
-  constructor(ecs) {
+  constructor(ecs, input) {
     this.query = ecs.with("player", "physicsBody", "controllable");
+    this.input = input;
   }
 
   update(dt) {
@@ -317,17 +238,17 @@ class PlayerInputSystem {
       const player = entity.player;
       const phys = entity.physicsBody;
 
-      if (Input.sit) {
+      if (this.input.wasPressed("sit")) {
         player.isSitting = !player.isSitting;
         player.isLaying = false;
       }
 
-      if (Input.lay) {
+      if (this.input.wasPressed("lay")) {
         player.isLaying = !player.isLaying;
         player.isSitting = false;
       }
 
-      if (Input.jump) {
+      if (this.input.wasPressed("jump")) {
         player.isSitting = false;
         player.isLaying = false;
       }
@@ -335,17 +256,17 @@ class PlayerInputSystem {
       let inputX = 0;
       let inputZ = 0;
 
-      if (Input.forward) inputZ -= 1;
-      if (Input.backward) inputZ += 1;
-      if (Input.left) inputX -= 1;
-      if (Input.right) inputX += 1;
+      if (this.input.isDown("moveForward")) inputZ -= 1;
+      if (this.input.isDown("moveBackward")) inputZ += 1;
+      if (this.input.isDown("moveLeft")) inputX -= 1;
+      if (this.input.isDown("moveRight")) inputX += 1;
 
       if (inputX !== 0 || inputZ !== 0) {
         player.targetRotation = Math.atan2(inputX, inputZ);
       }
 
       if (
-        Input.jump &&
+        this.input.wasPressed("jump") &&
         Math.abs(phys.body.velocity.y) < PARAMS.Player.groundedVelocityY &&
         !player.isSitting &&
         !player.isLaying
@@ -580,13 +501,14 @@ class StudentAnimationSystem {
 }
 
 class InteractionSystem {
-  constructor(ecs) {
+  constructor(ecs, input) {
     this.players = ecs.with("controllable", "physicsBody");
     this.interactables = ecs.with("interactable");
+    this.input = input;
   }
 
   update(dt) {
-    if (!Input.interact) return;
+    if (!this.input.wasPressed("interact")) return;
 
     let playerPos = null;
     for (const entity of this.players) {
@@ -680,17 +602,18 @@ class EnvironmentInteractionSystem {
 }
 
 class CharacterSwitchSystem {
-  constructor(ecs, camera, scene) {
+  constructor(ecs, camera, scene, input) {
     this.camera = camera;
     this.scene = scene;
     this.raycaster = new THREE.Raycaster();
     this.controllables = ecs.with("controllable");
+    this.input = input;
   }
 
   update(dt) {
-    if (!Input.mouseClicked) return;
+    if (!this.input.wasPressed("mousePrimary")) return;
 
-    this.raycaster.setFromCamera(Input.mousePos, this.camera);
+    this.raycaster.setFromCamera(this.input.getMousePosition(), this.camera);
     const intersects = this.raycaster.intersectObjects(
       this.scene.children,
       true
@@ -740,16 +663,6 @@ class CameraFollowSystem {
       this.controls.target.copy(this.cameraTargetPos);
       this.controls.update();
     }
-  }
-}
-
-class InputCleanupSystem {
-  update() {
-    Input.jump = false;
-    Input.sit = false;
-    Input.lay = false;
-    Input.interact = false;
-    Input.mouseClicked = false;
   }
 }
 
@@ -1828,18 +1741,19 @@ class Game {
     window.addEventListener("mousedown", startAudio);
     window.addEventListener("keydown", startAudio);
     this.ecs = new World();
+    this.input = new InputManager();
+    this.input.registerListeners();
 
     this.systems = [
-      new PlayerInputSystem(this.ecs),
+      new PlayerInputSystem(this.ecs, this.input),
       new PhysicsSyncSystem(this.ecs, this),
       new PlayerAnimationSystem(this.ecs),
       new StudentAnimationSystem(this.ecs),
-      new InteractionSystem(this.ecs),
+      new InteractionSystem(this.ecs, this.input),
       new UpstairsVisibilitySystem(this.ecs),
-      new CharacterSwitchSystem(this.ecs, this.camera, this.scene),
+      new CharacterSwitchSystem(this.ecs, this.camera, this.scene, this.input),
       new CameraFollowSystem(this.ecs, this.controls),
-      new FloatingTextSystem(this.ecs, this.scene),
-      new InputCleanupSystem()
+      new FloatingTextSystem(this.ecs, this.scene)
     ];
 
     const environmentHandles = buildEnvironment(
@@ -1863,7 +1777,12 @@ class Game {
       this
     );
 
-    window.addEventListener("resize", () => this.onWindowResize());
+    this.boundResizeHandler = () => this.onWindowResize();
+    this.boundBeforeUnloadHandler = () => this.destroy();
+    window.addEventListener("resize", this.boundResizeHandler);
+    window.addEventListener("beforeunload", this.boundBeforeUnloadHandler);
+
+    this.destroyed = false;
     this.animate();
   }
   initThreeAndCannon() {
@@ -1929,7 +1848,10 @@ class Game {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
   animate() {
+    if (this.destroyed) return;
+
     requestAnimationFrame(() => this.animate());
+    this.input.beginFrame();
     const deltaTime = this.clock.getDelta();
 
     this.physicsWorld.step(
@@ -1943,6 +1865,20 @@ class Game {
     }
 
     this.renderer.render(this.scene, this.camera);
+    this.input.endFrame();
+  }
+
+  destroy() {
+    if (this.destroyed) return;
+    this.destroyed = true;
+
+    this.input.unregisterListeners();
+    window.removeEventListener("resize", this.boundResizeHandler);
+    window.removeEventListener("beforeunload", this.boundBeforeUnloadHandler);
+
+    if (this.renderer && this.renderer.domElement.parentNode) {
+      this.renderer.domElement.parentNode.removeChild(this.renderer.domElement);
+    }
   }
 }
 
