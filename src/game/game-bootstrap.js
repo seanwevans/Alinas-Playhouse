@@ -4,8 +4,10 @@ import { World } from "https://esm.sh/miniplex";
 import { InputManager } from "../core/input.js";
 import { COLORS, PARAMS } from "../config/game-config.js";
 import { createPlayerEntity } from "../entities/player-factory.js";
+import { createCookieDogEntity } from "../entities/dog-factory.js";
 import { buildEnvironment } from "../environment/build-environment.js";
 import {
+  DogFollowSystem,
   PlayerAnimationSystem,
   PlayerInputSystem,
   PhysicsSyncSystem,
@@ -45,6 +47,7 @@ export class Game {
       new PhysicsSyncSystem(this.ecs, this),
       new PlayerAnimationSystem(this.ecs),
       new StudentAnimationSystem(this.ecs),
+      new DogFollowSystem(this.ecs, this),
       new InteractionSystem(this.ecs, this.input),
       new UpstairsVisibilitySystem(this.ecs),
       new CharacterSwitchSystem(this.ecs, this.camera, this.scene, this.input),
@@ -69,6 +72,7 @@ export class Game {
       true,
       this
     );
+    createCookieDogEntity(this.ecs, this.scene);
 
     setupWindowLifecycle(this);
 
