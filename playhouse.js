@@ -3,8 +3,9 @@ import * as CANNON from "https://esm.sh/cannon-es";
 import { OrbitControls } from "https://esm.sh/three/addons/controls/OrbitControls.js";
 import { World } from "https://esm.sh/miniplex";
 import { InputManager } from "./src/core/input.js";
-import { playBonk, playScream } from "./src/audio/effects.js";
+import { playScream } from "./src/audio/effects.js";
 import { COLORS, LAYOUT, PARAMS } from "./src/config/game-config.js";
+import { runPlayerImpactEffects } from "./src/effects/effect-service.js";
 import {
   copyCannonVec3ToThree,
   copyThreeVec3ToCannon,
@@ -602,25 +603,16 @@ function createPlayerEntity(
 
         const impactIntensity = THREE.MathUtils.clamp(impactVelocity / 8, 0.75, 1.6);
 
-        // 1. Play Sound
-        playBonk(gameRef.audioCtx, impactVelocity);
-
-        // 2. Flash Screen
-        triggerScreenFlash(impactIntensity);
-
-        // 3. Spawn 3D "BONK" Text
-        const sprite = createBonkSprite();
-        sprite.scale.multiplyScalar(impactIntensity);
-        sprite.position.set(
-          body.position.x,
-          body.position.y + 1.2,
-          body.position.z
-        );
-        gameRef.scene.add(sprite);
-
-        // Add to ECS so the new system animates and destroys it
-        gameRef.ecs.add({
-          floatingText: new C_FloatingText(sprite, 0.8) // 0.8 seconds duration
+        runPlayerImpactEffects({
+          gameRef,
+          impactVelocity,
+          impactIntensity,
+          position: body.position,
+          addFloatingText: (sprite) => {
+            gameRef.ecs.add({
+              floatingText: new C_FloatingText(sprite, 0.8)
+            });
+          }
         });
       }
     });
@@ -1463,57 +1455,6 @@ function buildEnvironment(ecs, scene, world, config = {}) {
     ...staircaseHandles,
     ...upstairsHandles
   };
-}
-
-function createBonkSprite() {
-  const canvas = document.createElement("canvas");
-  canvas.width = 256;
-  canvas.height = 128;
-  const ctx = canvas.getContext("2d");
-
-  // Draw "BONK" text
-  ctx.font = '900 72px "Arial Black", Arial, sans-serif';
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillStyle = "#ff0000"; // Red caps
-  ctx.strokeStyle = "#ffffff"; // White outline
-  ctx.lineWidth = 6;
-
-  ctx.strokeText("BONK", 128, 64);
-  ctx.fillText("BONK", 128, 64);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  const material = new THREE.SpriteMaterial({
-    map: texture,
-    transparent: true
-  });
-  const sprite = new THREE.Sprite(material);
-  sprite.scale.set(1.5, 0.75, 1);
-  return sprite;
-}
-
-function triggerScreenFlash(intensity = 1) {
-  const clampedIntensity = THREE.MathUtils.clamp(intensity, 0.75, 1.6);
-  const alpha = THREE.MathUtils.lerp(0.25, 0.55, (clampedIntensity - 0.75) / 0.85);
-  const flash = document.createElement("div");
-  flash.style.position = "fixed";
-  flash.style.top = "0";
-  flash.style.left = "0";
-  flash.style.width = "100vw";
-  flash.style.height = "100vh";
-  flash.style.backgroundColor = `rgba(255, 0, 0, ${alpha})`; // Red tint
-  flash.style.pointerEvents = "none";
-  flash.style.transition = "opacity 0.2s ease-out";
-  flash.style.zIndex = "9999";
-  document.body.appendChild(flash);
-
-  // Force a browser reflow so the transition works instantly
-  flash.getBoundingClientRect();
-
-  requestAnimationFrame(() => {
-    flash.style.opacity = "0";
-    setTimeout(() => flash.remove(), 200);
-  });
 }
 
 class C_FloatingText {
