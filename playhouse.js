@@ -3,6 +3,7 @@ import * as CANNON from "https://esm.sh/cannon-es";
 import { OrbitControls } from "https://esm.sh/three/addons/controls/OrbitControls.js";
 import { World } from "https://esm.sh/miniplex";
 import { InputManager } from "./src/core/input.js";
+import { playBonk, playScream } from "./src/audio/effects.js";
 
 const PARAMS = {
   Player: {
@@ -312,7 +313,7 @@ class PhysicsSyncSystem {
         ) {
           entity.player.hasScreamed = true;
           if (this.gameRef && this.gameRef.audioCtx) {
-            Scream(this.gameRef.audioCtx);
+            playScream(this.gameRef.audioCtx);
           }
         }
       }
@@ -583,6 +584,23 @@ class UpstairsVisibilitySystem {
   }
 }
 
+class EnvironmentInteractionSystem {
+  constructor(handles, params) {
+    this.handles = handles;
+    this.params = params;
+  }
+
+  update() {
+    if (!this.handles.fridgeDoorGrp) return;
+
+    this.handles.fridgeDoorGrp.rotation.y = THREE.MathUtils.lerp(
+      this.handles.fridgeDoorGrp.rotation.y,
+      this.handles.isFridgeOpen ? this.params.World.fridgeOpenAngle : 0,
+      this.params.World.fridgeLerp
+    );
+  }
+}
+
 class CharacterSwitchSystem {
   constructor(ecs, camera, scene, input) {
     this.camera = camera;
@@ -760,7 +778,7 @@ function createPlayerEntity(
       const impactVelocity = Math.abs(e.contact.getImpactVelocityAlongNormal());
       if (impactVelocity > 1.5) {
         // 1. Play Sound
-        Bonk(gameRef.audioCtx, impactVelocity);
+        playBonk(gameRef.audioCtx, impactVelocity);
 
         // 2. Flash Screen
         triggerScreenFlash();
@@ -920,7 +938,9 @@ function buildChair(scene, world, x, z, color, rotationY) {
   world.addBody(body);
 }
 
-function buildEnvironment(ecs, scene, world) {
+function buildBedroomZone(ecs, scene, world, config) {
+  const { params } = config;
+
   const createFloor = (color, x) => {
     const mesh = new THREE.Mesh(
       new THREE.PlaneGeometry(20, 20),
@@ -1051,12 +1071,12 @@ function buildEnvironment(ecs, scene, world) {
   ecs.add({
     interactable: new C_Interactable(
       new THREE.Vector3(-8, 0, -8),
-      PARAMS.World.interactRadius,
+      params.World.interactRadius,
       () => {
         isLampOn = !isLampOn;
-        lampLight.intensity = isLampOn ? PARAMS.World.lampIntensityOn : 0;
+        lampLight.intensity = isLampOn ? params.World.lampIntensityOn : 0;
         shade.material.emissiveIntensity = isLampOn
-          ? PARAMS.World.lampEmissiveOn
+          ? params.World.lampEmissiveOn
           : 0;
       }
     )
@@ -1111,17 +1131,22 @@ function buildEnvironment(ecs, scene, world) {
   ecs.add({
     interactable: new C_Interactable(
       new THREE.Vector3(6, 0, -8),
-      PARAMS.World.interactRadius,
+      params.World.interactRadius,
       () => {
         isPcOn = !isPcOn;
         screen.material.color.set(
           isPcOn ? COLORS.pcScreenOn : COLORS.pcScreenOff
         );
         screen.material.emissiveIntensity = isPcOn ? 1 : 0;
-        pcLight.intensity = isPcOn ? PARAMS.World.pcLightIntensityOn : 0;
+        pcLight.intensity = isPcOn ? params.World.pcLightIntensityOn : 0;
       }
     )
   });
+  return {};
+}
+
+function buildClassroomZone(ecs, scene, world, config) {
+  const { gameRef } = config;
 
   buildStaticBox(scene, world, 12, 1.5, 0.1, 20, 2.0, -9.7, COLORS.classFloor);
   buildStaticBox(
@@ -1180,7 +1205,7 @@ function buildEnvironment(ecs, scene, world) {
         Math.PI,
         false,
         true,
-        this
+        gameRef
       );
 
       studentEnt.player.isSitting = true;
@@ -1193,7 +1218,11 @@ function buildEnvironment(ecs, scene, world) {
       studentIdx++;
     }
   }
+  return {};
+}
 
+function buildKitchenZone(ecs, scene, world, config) {
+  const { params } = config;
   buildStaticBox(
     scene,
     world,
@@ -1229,21 +1258,11 @@ function buildEnvironment(ecs, scene, world) {
   ecs.add({
     interactable: new C_Interactable(
       new THREE.Vector3(32.5, 0, -8.5),
-      PARAMS.World.interactRadius,
+      params.World.interactRadius,
       () => {
         isFridgeOpen = !isFridgeOpen;
       }
     )
-  });
-
-  ecs.add({
-    update: () => {
-      fridgeDoorGrp.rotation.y = THREE.MathUtils.lerp(
-        fridgeDoorGrp.rotation.y,
-        isFridgeOpen ? PARAMS.World.fridgeOpenAngle : 0,
-        PARAMS.World.fridgeLerp
-      );
-    }
   });
 
   buildStaticBox(scene, world, 8, 1.5, 2, 39, 0.75, -8.5, COLORS.counterBase);
@@ -1269,7 +1288,7 @@ function buildEnvironment(ecs, scene, world) {
   ecs.add({
     interactable: new C_Interactable(
       new THREE.Vector3(38, 0, -8.5),
-      PARAMS.World.interactRadius,
+      params.World.interactRadius,
       () => {
         isSinkOn = !isSinkOn;
         water.visible = isSinkOn;
@@ -1304,7 +1323,7 @@ function buildEnvironment(ecs, scene, world) {
   ecs.add({
     interactable: new C_Interactable(
       new THREE.Vector3(45, 0, -8.5),
-      PARAMS.World.interactRadius,
+      params.World.interactRadius,
       () => {
         isStoveOn = !isStoveOn;
         burners.forEach((burner, idx) => {
@@ -1321,7 +1340,7 @@ function buildEnvironment(ecs, scene, world) {
           }
         });
         stoveLight.intensity = isStoveOn
-          ? PARAMS.World.stoveLightIntensityOn
+          ? params.World.stoveLightIntensityOn
           : 0;
       }
     )
@@ -1352,8 +1371,12 @@ function buildEnvironment(ecs, scene, world) {
       );
     });
   });
+  return { fridgeDoorGrp, isFridgeOpen };
+}
 
-  const sData = LAYOUT.stairs;
+function buildStaircaseZone(ecs, scene, world, config) {
+  const { layout } = config;
+  const sData = layout.stairs;
   for (let i = 0; i < sData.count; i++) {
     const sx = sData.startX + i * sData.depth;
     const sy = sData.height / 2 + i * sData.height;
@@ -1387,9 +1410,13 @@ function buildEnvironment(ecs, scene, world) {
   );
   rampBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 0, 1), rampAngle);
   world.addBody(rampBody);
+  return {};
+}
 
-  const fy = LAYOUT.upstairs.floorY;
-  const wy = fy + LAYOUT.upstairs.wallYOffset;
+function buildUpstairsZone(ecs, scene, world, config) {
+  const { layout } = config;
+  const fy = layout.upstairs.floorY;
+  const wy = fy + layout.upstairs.wallYOffset;
 
   buildUpstairsBox(
     ecs,
@@ -1585,29 +1612,31 @@ function buildEnvironment(ecs, scene, world) {
     -6,
     COLORS.upstairsAccentWood
   );
+  return {};
 }
 
-function Bonk(audioCtx, impactVelocity) {
-  if (!audioCtx) return;
+function buildEnvironment(ecs, scene, world, config = {}) {
+  const mergedConfig = {
+    params: PARAMS,
+    colors: COLORS,
+    layout: LAYOUT,
+    gameRef: null,
+    ...config
+  };
 
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
+  const bedroomHandles = buildBedroomZone(ecs, scene, world, mergedConfig);
+  const classroomHandles = buildClassroomZone(ecs, scene, world, mergedConfig);
+  const kitchenHandles = buildKitchenZone(ecs, scene, world, mergedConfig);
+  const staircaseHandles = buildStaircaseZone(ecs, scene, world, mergedConfig);
+  const upstairsHandles = buildUpstairsZone(ecs, scene, world, mergedConfig);
 
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-
-  const now = audioCtx.currentTime;
-  const duration = 0.15;
-
-  osc.type = "sine";
-  osc.frequency.setValueAtTime(550, now);
-  osc.frequency.exponentialRampToValueAtTime(50, now + duration);
-
-  const volume = Math.min(impactVelocity / 15, 0.5);
-  gain.gain.setValueAtTime(volume, now);
-  gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
-  osc.start(now);
-  osc.stop(now + duration);
+  return {
+    ...bedroomHandles,
+    ...classroomHandles,
+    ...kitchenHandles,
+    ...staircaseHandles,
+    ...upstairsHandles
+  };
 }
 
 function createBonkSprite() {
@@ -1657,49 +1686,6 @@ function triggerScreenFlash() {
     flash.style.opacity = "0";
     setTimeout(() => flash.remove(), 200);
   });
-}
-
-function Scream(audioCtx) {
-  if (!audioCtx) return;
-
-  const osc = audioCtx.createOscillator();
-  const lfo = audioCtx.createOscillator(); // Creates the "voice wobble"
-  const lfoGain = audioCtx.createGain();
-  const mainGain = audioCtx.createGain();
-
-  // A sawtooth wave is buzzy and harsh, good for a scream
-  osc.type = "sawtooth";
-  lfo.type = "sine";
-
-  // Wire the LFO to modulate the main oscillator's pitch
-  lfo.connect(lfoGain);
-  lfoGain.connect(osc.frequency);
-
-  // Wire the main oscillator to the speakers
-  osc.connect(mainGain);
-  mainGain.connect(audioCtx.destination);
-
-  const now = audioCtx.currentTime;
-  const duration = 1.5; // Lasts 1.5 seconds
-
-  // 1. Pitch Envelope: Start high (panic) and drop as they fall
-  osc.frequency.setValueAtTime(800, now);
-  osc.frequency.exponentialRampToValueAtTime(300, now + duration);
-
-  // 2. Vibrato (Wobble): 30 wobbles per second, shifting pitch by 50hz
-  lfo.frequency.setValueAtTime(30, now);
-  lfoGain.gain.setValueAtTime(50, now);
-
-  // 3. Volume Envelope: Ramp up fast, hold, then fade out
-  mainGain.gain.setValueAtTime(0, now);
-  mainGain.gain.linearRampToValueAtTime(0.2, now + 0.1);
-  mainGain.gain.setValueAtTime(0.2, now + duration - 0.2);
-  mainGain.gain.linearRampToValueAtTime(0.01, now + duration);
-
-  osc.start(now);
-  lfo.start(now);
-  osc.stop(now + duration);
-  lfo.stop(now + duration);
 }
 
 class C_FloatingText {
@@ -1770,9 +1756,13 @@ class Game {
       new FloatingTextSystem(this.ecs, this.scene)
     ];
 
-    this.anonSystems = this.ecs.with("update");
-
-    buildEnvironment(this.ecs, this.scene, this.physicsWorld);
+    const environmentHandles = buildEnvironment(
+      this.ecs,
+      this.scene,
+      this.physicsWorld,
+      { gameRef: this }
+    );
+    this.systems.push(new EnvironmentInteractionSystem(environmentHandles, PARAMS));
 
     createPlayerEntity(
       this.ecs,
@@ -1794,16 +1784,6 @@ class Game {
 
     this.destroyed = false;
     this.animate();
-  }
-  initAudio() {
-    this.audioListener = new THREE.AudioListener();
-    this.camera.add(this.audioListener);
-    this.bonkSound = new THREE.Audio(this.audioListener);
-    const audioLoader = new THREE.AudioLoader();
-    audioLoader.load("path/to/your/bonk.mp3", (buffer) => {
-      this.bonkSound.setBuffer(buffer);
-      this.bonkSound.setVolume(0.5);
-    });
   }
   initThreeAndCannon() {
     this.scene = new THREE.Scene();
@@ -1882,10 +1862,6 @@ class Game {
 
     for (const sys of this.systems) {
       sys.update(deltaTime);
-    }
-
-    for (const anon of this.anonSystems) {
-      anon.update(deltaTime);
     }
 
     this.renderer.render(this.scene, this.camera);
