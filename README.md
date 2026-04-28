@@ -2,6 +2,16 @@
 
 A tiny browser game you can run locally or deploy as a static site.
 
+## Architecture
+
+- **Canonical runtime entry:** `playhouse.js` imports `Game` from `src/game/game-bootstrap.js`.
+- **Active gameplay modules:**
+  - `src/game/` for app composition, lifecycle, render/physics setup, and frame runtime.
+  - `src/environment/` for zone composition and world-building logic.
+  - `src/entities/` + `src/systems/` for player creation and ECS systems.
+- **Legacy modules:**
+  - `src/world/` is retained only for older low-level/world-builder artifacts and is not the canonical environment entry path.
+
 ## Deploy
 
 This project is fully static (`index.html`, `playhouse.js`, and `src/`), so you can deploy it on any static hosting service.
