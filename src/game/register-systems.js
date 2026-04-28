@@ -15,6 +15,7 @@ export function registerSystems({
     new constructors.PhysicsSyncSystem(ecs, gameRef),
     new constructors.PlayerAnimationSystem(ecs),
     new constructors.StudentAnimationSystem(ecs),
+    new constructors.DogFollowSystem(ecs, gameRef),
     new constructors.InteractionSystem(ecs, input),
     new constructors.UpstairsVisibilitySystem(ecs),
     new constructors.CharacterSwitchSystem(ecs, camera, scene, input),

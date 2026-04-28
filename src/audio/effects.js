@@ -57,3 +57,56 @@ export function playScream(audioCtx) {
   osc.stop(now + duration);
   lfo.stop(now + duration);
 }
+
+export function playDogBark(audioCtx, intensity = 1) {
+  if (!audioCtx) return;
+
+  const now = audioCtx.currentTime;
+  const totalDuration = 0.2;
+  const baseVolume = Math.min(0.22 * intensity, 0.28);
+
+  const osc = audioCtx.createOscillator();
+  osc.type = "square";
+  osc.frequency.setValueAtTime(230 + Math.random() * 35, now);
+  osc.frequency.exponentialRampToValueAtTime(120 + Math.random() * 15, now + totalDuration);
+
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.001, now);
+  gain.gain.exponentialRampToValueAtTime(baseVolume, now + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + totalDuration);
+
+  const noiseBuffer = audioCtx.createBuffer(
+    1,
+    Math.floor(audioCtx.sampleRate * totalDuration),
+    audioCtx.sampleRate
+  );
+  const data = noiseBuffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) {
+    data[i] = (Math.random() * 2 - 1) * 0.45;
+  }
+
+  const noiseSource = audioCtx.createBufferSource();
+  noiseSource.buffer = noiseBuffer;
+
+  const noiseFilter = audioCtx.createBiquadFilter();
+  noiseFilter.type = "bandpass";
+  noiseFilter.frequency.setValueAtTime(900, now);
+  noiseFilter.Q.setValueAtTime(0.6, now);
+
+  const noiseGain = audioCtx.createGain();
+  noiseGain.gain.setValueAtTime(0.001, now);
+  noiseGain.gain.exponentialRampToValueAtTime(baseVolume * 0.55, now + 0.01);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, now + totalDuration);
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  noiseSource.connect(noiseFilter);
+  noiseFilter.connect(noiseGain);
+  noiseGain.connect(audioCtx.destination);
+
+  osc.start(now);
+  osc.stop(now + totalDuration);
+  noiseSource.start(now);
+  noiseSource.stop(now + totalDuration);
+}

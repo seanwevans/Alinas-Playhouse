@@ -65,3 +65,24 @@ export class C_FloatingText {
     this.startY = sprite.position.y;
   }
 }
+
+export class C_Dog {
+  constructor(
+    name = "Cookie",
+    followDistance = 1.4,
+    followLerp = 0.08,
+    minBarkInterval = 4.5,
+    maxBarkInterval = 9
+  ) {
+    this.name = name;
+    this.followDistance = followDistance;
+    this.followLerp = followLerp;
+    this.minBarkInterval = minBarkInterval;
+    this.maxBarkInterval = maxBarkInterval;
+    this.barkTimer = 0;
+    this.nextBarkAt =
+      minBarkInterval + Math.random() * (maxBarkInterval - minBarkInterval);
+    this.lastX = 0;
+    this.lastZ = 0;
+  }
+}
