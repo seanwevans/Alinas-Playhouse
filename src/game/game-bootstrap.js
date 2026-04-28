@@ -30,6 +30,7 @@ import { runFrame } from "./game-runtime.js";
 
 export class Game {
   constructor() {
+    this.params = PARAMS;
     this.clock = new THREE.Clock();
     this.initThreeAndCannon();
     this.audioCtx = null;
@@ -54,7 +55,7 @@ export class Game {
     const environmentHandles = buildEnvironment(this.ecs, this.scene, this.physicsWorld, {
       gameRef: this
     });
-    this.systems.push(new EnvironmentInteractionSystem(environmentHandles, PARAMS));
+    this.systems.push(new EnvironmentInteractionSystem(environmentHandles, this.params));
 
     createPlayerEntity(
       this.ecs,
@@ -80,12 +81,12 @@ export class Game {
     this.scene.background = new THREE.Color(COLORS.bg);
 
     this.camera = new THREE.PerspectiveCamera(
-      PARAMS.Camera.fov,
+      this.params.Camera.fov,
       window.innerWidth / window.innerHeight,
-      PARAMS.Camera.near,
-      PARAMS.Camera.far
+      this.params.Camera.near,
+      this.params.Camera.far
     );
-    this.camera.position.copy(PARAMS.Camera.startPos);
+    this.camera.position.copy(this.params.Camera.startPos);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -95,16 +96,16 @@ export class Game {
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
-    this.controls.dampingFactor = PARAMS.Camera.dampingFactor;
+    this.controls.dampingFactor = this.params.Camera.dampingFactor;
     this.controls.maxPolarAngle = Math.PI / 2 + 0.1;
     this.controls.enablePan = false;
     this.controls.enableZoom = false;
-    this.controls.minDistance = PARAMS.Camera.minDistance;
-    this.controls.maxDistance = PARAMS.Camera.maxDistance;
+    this.controls.minDistance = this.params.Camera.minDistance;
+    this.controls.maxDistance = this.params.Camera.maxDistance;
 
-    this.scene.add(new THREE.AmbientLight(COLORS.ambient, PARAMS.World.ambientIntensity));
+    this.scene.add(new THREE.AmbientLight(COLORS.ambient, this.params.World.ambientIntensity));
 
-    const dirLight = new THREE.DirectionalLight(COLORS.directional, PARAMS.World.dirIntensity);
+    const dirLight = new THREE.DirectionalLight(COLORS.directional, this.params.World.dirIntensity);
 
     dirLight.position.set(20, 20, 10);
     dirLight.castShadow = true;
@@ -115,13 +116,13 @@ export class Game {
     this.scene.add(dirLight);
 
     this.physicsWorld = new CANNON.World();
-    this.physicsWorld.gravity.set(0, PARAMS.Physics.gravity, 0);
+    this.physicsWorld.gravity.set(0, this.params.Physics.gravity, 0);
     this.physicsWorld.broadphase = new CANNON.SAPBroadphase(this.physicsWorld);
 
     const mat = new CANNON.Material("default");
     const contactMat = new CANNON.ContactMaterial(mat, mat, {
-      friction: PARAMS.Physics.friction,
-      restitution: PARAMS.Physics.restitution
+      friction: this.params.Physics.friction,
+      restitution: this.params.Physics.restitution
     });
 
     this.physicsWorld.addContactMaterial(contactMat);
