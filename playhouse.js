@@ -457,6 +457,7 @@ class CameraFollowSystem {
   constructor(ecs, controls) {
     this.controls = controls;
     this.cameraTargetPos = new THREE.Vector3();
+    this.desiredTarget = new THREE.Vector3();
     this.players = ecs.with("controllable", "renderable");
   }
 
@@ -470,9 +471,9 @@ class CameraFollowSystem {
     }
 
     if (playerPos) {
-      const desiredTarget = new THREE.Vector3().copy(playerPos);
-      desiredTarget.y += PARAMS.Camera.targetOffsetY;
-      this.cameraTargetPos.lerp(desiredTarget, PARAMS.Camera.followLerp);
+      this.desiredTarget.copy(playerPos);
+      this.desiredTarget.y += PARAMS.Camera.targetOffsetY;
+      this.cameraTargetPos.lerp(this.desiredTarget, PARAMS.Camera.followLerp);
       this.controls.target.copy(this.cameraTargetPos);
       this.controls.update();
     }
