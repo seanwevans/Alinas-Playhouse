@@ -408,7 +408,9 @@ class EnvironmentInteractionSystem {
 
     this.handles.fridgeDoorGrp.rotation.y = THREE.MathUtils.lerp(
       this.handles.fridgeDoorGrp.rotation.y,
-      this.handles.isFridgeOpen ? this.params.World.fridgeOpenAngle : 0,
+      this.handles.kitchenState.isFridgeOpen
+        ? this.params.World.fridgeOpenAngle
+        : 0,
       this.params.World.fridgeLerp
     );
   }
@@ -1078,13 +1080,13 @@ function buildKitchenZone(ecs, scene, world, config) {
   fHandle.position.set(2.0, 0.05, 0.15);
   fridgeDoorGrp.add(fHandle);
 
-  let isFridgeOpen = false;
+  const kitchenState = { isFridgeOpen: false };
   ecs.add({
     interactable: new C_Interactable(
       new THREE.Vector3(32.5, 0, -8.5),
       params.World.interactRadius,
       () => {
-        isFridgeOpen = !isFridgeOpen;
+        kitchenState.isFridgeOpen = !kitchenState.isFridgeOpen;
       }
     )
   });
@@ -1195,7 +1197,7 @@ function buildKitchenZone(ecs, scene, world, config) {
       );
     });
   });
-  return { fridgeDoorGrp, isFridgeOpen };
+  return { fridgeDoorGrp, kitchenState };
 }
 
 function buildStaircaseZone(ecs, scene, world, config) {
