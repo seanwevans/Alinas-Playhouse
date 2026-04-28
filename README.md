@@ -1,5 +1,5 @@
 # Alina's Playhouse
-<img alt="Screenshot of Alina's Playhouse 2028-04-28T1441" src="https://github.com/user-attachments/assets/a4429710-1a6d-4de9-8606-d60dbdd239f3" />
+<img alt="Alina's Playhouse" src="https://github.com/user-attachments/assets/de3f8550-58bf-44e1-b8bf-efb13fe82ce5" />
 
 A browser game you can run locally or deploy as a static site.
 
