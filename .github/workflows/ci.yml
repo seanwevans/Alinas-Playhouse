@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify required project files exist
+        run: test -f index.html && test -f playhouse.js
+
+      - name: JavaScript syntax check
+        run: node --check playhouse.js
+
+      - name: HTML doctype sanity check
+        run: grep -qi '^<!doctype html>' index.html
