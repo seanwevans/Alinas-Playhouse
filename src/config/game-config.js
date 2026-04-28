@@ -1,0 +1,142 @@
+import * as THREE from "https://esm.sh/three";
+
+export const PARAMS = {
+  Player: {
+    moveSpeed: 10,
+    jumpForce: 8,
+    groundedVelocityY: 0.2,
+    turnLerp: 0.15,
+    mass: 1,
+    sitY: -0.4,
+    layY: -0.65,
+    layZ: 0.5,
+    poseLerpSpeed: 0.2,
+    idleLerpSpeed: 0.1,
+    walkAnimSpeedMult: 15,
+    armSwingAmp: 0.6,
+    breathSpeed: 0.002,
+    breathAmp: 0.03
+  },
+  Physics: {
+    gravity: -20,
+    killPlaneY: -50,
+    screamPlaneY: -25,
+    respawnPos: new THREE.Vector3(0, 1, 0),
+    timeStep: 1 / 60,
+    maxSubSteps: 3,
+    friction: 0.1,
+    restitution: 0.1
+  },
+  Camera: {
+    fov: 45,
+    near: 0.01,
+    far: 10000,
+    startPos: new THREE.Vector3(0, 5, 12),
+    minDistance: 12,
+    maxDistance: 12,
+    dampingFactor: 0.05,
+    followLerp: 0.1,
+    targetOffsetY: 1
+  },
+  World: {
+    ambientIntensity: 0.6,
+    dirIntensity: 0.8,
+    interactRadius: 4,
+    upstairsThresholdY: 3.0,
+    upstairsLerp: 0.05,
+    opacityVisible: 1.0,
+    opacityHidden: 0.1,
+    opacityOpaqueReq: 0.95,
+    opacityShadowReq: 0.5,
+    lampIntensityOn: 1.5,
+    lampEmissiveOn: 0.5,
+    pcLightIntensityOn: 0.8,
+    stoveLightIntensityOn: 1.0,
+    stoveEmissiveOn: 0.8,
+    fridgeOpenAngle: -Math.PI / 1.5,
+    fridgeLerp: 0.1,
+    waterOpacity: 0.6
+  }
+};
+
+export const COLORS = {
+  bg: "#87CEEB",
+  ambient: "#ffffff",
+  directional: "#ffffff",
+
+  skin: "#ffcc99",
+  pants: "#00bfff",
+  hair: "#8b4513",
+  eye: "#000000",
+  mainPlayerShirt: "#ff1493",
+  studentShirts: ["#ff5733", "#33ff57", "#3357ff", "#f333ff", "#ff33a1", "#33fff5"],
+
+  floors: ["#ffe4e1", "#e0f7fa", "#faf0e6", "#123456", "#fedcba", "#beeeef"],
+  wallMain: "#b2fba5",
+  wallAlt: "#fffdd0",
+  wallAccent: "#e6e6fa",
+  classFloor: "#2f4f4f",
+
+  bedBase: "#ffb6c1",
+  bedWood: "#8b4513",
+  bedSheet: "#ffffff",
+  bedTrim: "#deb887",
+  rug: "#dda0dd",
+  chairBlue: "#4682b4",
+  lampBase: "#555555",
+  lampShade: "#fffacd",
+  lampLight: "#fffaa3",
+  pcDesk: "#8b4513",
+  pcCase: "#e3dac9",
+  pcScreenOff: "#2b2b2b",
+  pcScreenOn: "#ffffff",
+  pcScreenEmissive: "#00ffff",
+
+  deskPlatform: "#d2b48c",
+  deskBase: "#8b4513",
+  deskTop: "#deb887",
+  deskWood: "#a0522d",
+  deskLeg: "#708090",
+  chairRed: "#cd5c5c",
+
+  kitchenFloor: "#e0e0e0",
+  fridge: "#f5f5f5",
+  fridgeHandle: "#a9a9a9",
+  counterBase: "#8b4513",
+  counterTop: "#dcdcdc",
+  sink: "#87cefa",
+  faucet: "#c0c0c0",
+  water: "#00ffff",
+  stoveWhite: "#f5f5f5",
+  stoveBlack: "#000000",
+  burnerOff: "#4f4f4f",
+  burnerOn: "#ff4500",
+  stoveLight: "#ffaa00",
+  stoolSeat: "#cd853f",
+  stoolLeg: "#a9a9a9",
+
+  stairs: "#a0522d",
+  upstairsFloor: "#f5deb3",
+  upstairsWall: "#dda0dd",
+  upstairsTrimLight: "#8b4513",
+  upstairsTrimDark: "#333333",
+  upstairsTrimBlack: "#111111",
+  upstairsAccentRed: "#dc143c",
+  upstairsAccentWood: "#d2b48c"
+};
+
+export const LAYOUT = {
+  walls: { height: 5, thickness: 0.5 },
+  stairs: {
+    count: 20,
+    depth: 0.5,
+    height: 0.25,
+    width: 3,
+    startX: 35,
+    startZ: 4
+  },
+  upstairs: {
+    floorY: 5.0,
+    wallYOffset: 2.5
+  }
+};
