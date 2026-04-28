@@ -1,4 +1,4 @@
-export function registerGameLifecycle(game) {
+export function setupAudioUnlock(game) {
   const startAudio = () => {
     if (!game.audioCtx) {
       game.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -8,31 +8,25 @@ export function registerGameLifecycle(game) {
     window.removeEventListener("keydown", startAudio);
   };
 
+  game.boundStartAudioHandler = startAudio;
   window.addEventListener("mousedown", startAudio);
   window.addEventListener("keydown", startAudio);
+}
 
+export function setupWindowLifecycle(game) {
   game.boundResizeHandler = () => game.onWindowResize();
-  game.boundBeforeUnloadHandler = () => destroyGame(game);
-  game.boundStartAudioHandler = startAudio;
+  game.boundBeforeUnloadHandler = () => teardownWindowLifecycle(game);
 
   window.addEventListener("resize", game.boundResizeHandler);
   window.addEventListener("beforeunload", game.boundBeforeUnloadHandler);
 }
 
-export function destroyGame(game) {
-  if (game.destroyed) return;
-  game.destroyed = true;
-
-  game.input.unregisterListeners();
+export function teardownWindowLifecycle(game) {
   window.removeEventListener("resize", game.boundResizeHandler);
   window.removeEventListener("beforeunload", game.boundBeforeUnloadHandler);
 
   if (game.boundStartAudioHandler) {
     window.removeEventListener("mousedown", game.boundStartAudioHandler);
     window.removeEventListener("keydown", game.boundStartAudioHandler);
-  }
-
-  if (game.renderer && game.renderer.domElement.parentNode) {
-    game.renderer.domElement.parentNode.removeChild(game.renderer.domElement);
   }
 }
