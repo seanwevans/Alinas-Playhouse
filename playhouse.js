@@ -1,10 +1,14 @@
 import * as THREE from "https://esm.sh/three";
 import * as CANNON from "https://esm.sh/cannon-es";
-import { OrbitControls } from "https://esm.sh/three/addons/controls/OrbitControls.js";
 import { World } from "https://esm.sh/miniplex";
 import { InputManager } from "./src/core/input.js";
 import { playBonk, playScream } from "./src/audio/effects.js";
 import { COLORS, LAYOUT, PARAMS } from "./src/config/game-config.js";
+import { createRenderContext } from "./src/game/create-render-context.js";
+import { createPhysicsWorld } from "./src/game/create-physics-world.js";
+import { registerSystems } from "./src/game/register-systems.js";
+import { startGameRuntime } from "./src/game/game-runtime.js";
+import { destroyGame, registerGameLifecycle } from "./src/game/game-lifecycle.js";
 import {
   copyCannonVec3ToThree,
   copyThreeVec3ToCannon,
@@ -1556,41 +1560,35 @@ class FloatingTextSystem {
 class Game {
   constructor() {
     this.clock = new THREE.Clock();
-    this.initThreeAndCannon();
+    this.params = PARAMS;
+    this.initContexts();
     this.audioCtx = null;
-    const startAudio = () => {
-      if (!this.audioCtx) {
-        this.audioCtx = new (window.AudioContext ||
-          window.webkitAudioContext)();
-      }
-      window.removeEventListener("mousedown", startAudio);
-      window.removeEventListener("keydown", startAudio);
-    };
-    window.addEventListener("mousedown", startAudio);
-    window.addEventListener("keydown", startAudio);
     this.ecs = new World();
     this.input = new InputManager();
     this.input.registerListeners();
-
-    this.systems = [
-      new PlayerInputSystem(this.ecs, this.input),
-      new PhysicsSyncSystem(this.ecs, this),
-      new PlayerAnimationSystem(this.ecs),
-      new StudentAnimationSystem(this.ecs),
-      new InteractionSystem(this.ecs, this.input),
-      new UpstairsVisibilitySystem(this.ecs),
-      new CharacterSwitchSystem(this.ecs, this.camera, this.scene, this.input),
-      new CameraFollowSystem(this.ecs, this.controls),
-      new FloatingTextSystem(this.ecs, this.scene)
-    ];
-
-    const environmentHandles = buildEnvironment(
-      this.ecs,
-      this.scene,
-      this.physicsWorld,
-      { gameRef: this }
-    );
-    this.systems.push(new EnvironmentInteractionSystem(environmentHandles, PARAMS));
+    this.systems = registerSystems({
+      ecs: this.ecs,
+      input: this.input,
+      scene: this.scene,
+      camera: this.camera,
+      controls: this.controls,
+      physicsWorld: this.physicsWorld,
+      gameRef: this,
+      params: PARAMS,
+      buildEnvironment,
+      constructors: {
+        PlayerInputSystem,
+        PhysicsSyncSystem,
+        PlayerAnimationSystem,
+        StudentAnimationSystem,
+        InteractionSystem,
+        UpstairsVisibilitySystem,
+        CharacterSwitchSystem,
+        CameraFollowSystem,
+        FloatingTextSystem,
+        EnvironmentInteractionSystem
+      }
+    }).systems;
 
     createPlayerEntity(
       this.ecs,
@@ -1605,108 +1603,32 @@ class Game {
       this
     );
 
-    this.boundResizeHandler = () => this.onWindowResize();
-    this.boundBeforeUnloadHandler = () => this.destroy();
-    window.addEventListener("resize", this.boundResizeHandler);
-    window.addEventListener("beforeunload", this.boundBeforeUnloadHandler);
-
     this.destroyed = false;
-    this.animate();
+    registerGameLifecycle(this);
+    startGameRuntime(this);
   }
-  initThreeAndCannon() {
-    this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(COLORS.bg);
-
-    this.camera = new THREE.PerspectiveCamera(
-      PARAMS.Camera.fov,
-      window.innerWidth / window.innerHeight,
-      PARAMS.Camera.near,
-      PARAMS.Camera.far
-    );
-    this.camera.position.copy(PARAMS.Camera.startPos);
-
-    this.renderer = new THREE.WebGLRenderer({ antialias: true });
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    document.body.appendChild(this.renderer.domElement);
-
-    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.controls.enableDamping = true;
-    this.controls.dampingFactor = PARAMS.Camera.dampingFactor;
-    this.controls.maxPolarAngle = Math.PI / 2 + 0.1;
-    this.controls.enablePan = false;
-    this.controls.enableZoom = false;
-    this.controls.minDistance = PARAMS.Camera.minDistance;
-    this.controls.maxDistance = PARAMS.Camera.maxDistance;
-
-    this.scene.add(
-      new THREE.AmbientLight(COLORS.ambient, PARAMS.World.ambientIntensity)
-    );
-
-    const dirLight = new THREE.DirectionalLight(
-      COLORS.directional,
-      PARAMS.World.dirIntensity
-    );
-
-    dirLight.position.set(20, 20, 10);
-    dirLight.castShadow = true;
-    dirLight.shadow.camera.top = 20;
-    dirLight.shadow.camera.bottom = -20;
-    dirLight.shadow.camera.left = -30;
-    dirLight.shadow.camera.right = 30;
-    this.scene.add(dirLight);
-
-    this.physicsWorld = new CANNON.World();
-    this.physicsWorld.gravity.set(0, PARAMS.Physics.gravity, 0);
-    this.physicsWorld.broadphase = new CANNON.SAPBroadphase(this.physicsWorld);
-
-    const mat = new CANNON.Material("default");
-    const contactMat = new CANNON.ContactMaterial(mat, mat, {
-      friction: PARAMS.Physics.friction,
-      restitution: PARAMS.Physics.restitution
+  initContexts() {
+    const { scene, camera, renderer, controls } = createRenderContext({
+      colors: COLORS,
+      params: this.params
     });
 
-    this.physicsWorld.addContactMaterial(contactMat);
-    this.physicsWorld.defaultContactMaterial = contactMat;
+    const { physicsWorld } = createPhysicsWorld(this.params);
+
+    this.scene = scene;
+    this.camera = camera;
+    this.renderer = renderer;
+    this.controls = controls;
+    this.physicsWorld = physicsWorld;
   }
   onWindowResize() {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
-  animate() {
-    if (this.destroyed) return;
-
-    requestAnimationFrame(() => this.animate());
-    this.input.beginFrame();
-    const deltaTime = this.clock.getDelta();
-
-    this.physicsWorld.step(
-      PARAMS.Physics.timeStep,
-      deltaTime,
-      PARAMS.Physics.maxSubSteps
-    );
-
-    for (const sys of this.systems) {
-      sys.update(deltaTime);
-    }
-
-    this.renderer.render(this.scene, this.camera);
-    this.input.endFrame();
-  }
 
   destroy() {
-    if (this.destroyed) return;
-    this.destroyed = true;
-
-    this.input.unregisterListeners();
-    window.removeEventListener("resize", this.boundResizeHandler);
-    window.removeEventListener("beforeunload", this.boundBeforeUnloadHandler);
-
-    if (this.renderer && this.renderer.domElement.parentNode) {
-      this.renderer.domElement.parentNode.removeChild(this.renderer.domElement);
-    }
+    destroyGame(this);
   }
 }
 
