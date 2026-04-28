@@ -1,16 +1,27 @@
-// Ownership: per-frame runtime step orchestration for physics, systems, render, and input.
-import { PARAMS } from "../config/game-config.js";
+export function startGameRuntime(game) {
+  const animate = () => {
+    if (game.destroyed) return;
 
-export function runFrame(game) {
-  game.input.beginFrame();
-  const deltaTime = game.clock.getDelta();
+    requestAnimationFrame(animate);
+    game.input.beginFrame();
 
-  game.physicsWorld.step(PARAMS.Physics.timeStep, deltaTime, PARAMS.Physics.maxSubSteps);
+    const deltaTime = game.clock.getDelta();
 
-  for (const sys of game.systems) {
-    sys.update(deltaTime);
-  }
+    game.physicsWorld.step(
+      game.params.Physics.timeStep,
+      deltaTime,
+      game.params.Physics.maxSubSteps
+    );
 
-  game.renderer.render(game.scene, game.camera);
-  game.input.endFrame();
+    for (const sys of game.systems) {
+      sys.update(deltaTime);
+    }
+
+    game.renderer.render(game.scene, game.camera);
+    game.input.endFrame();
+  };
+
+  animate();
+
+  return { animate };
 }

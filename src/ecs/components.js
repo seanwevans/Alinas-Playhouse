@@ -1,4 +1,3 @@
-// Ownership: ECS component data-only definitions shared by factories and systems.
 import { PARAMS } from "../config/game-config.js";
 
 export class C_Renderable {
