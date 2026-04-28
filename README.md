@@ -1,0 +1,32 @@
+# Alina's Playhouse
+
+A tiny browser game you can run locally or deploy as a static site.
+
+## Deploy
+
+This project is fully static (`index.html`, `playhouse.js`, and `src/`), so you can deploy it on any static hosting service.
+
+### Option 1: Quick local deploy (for testing)
+
+From the project root:
+
+```bash
+python3 -m http.server 8080
+```
+
+Then open: <http://localhost:8080>
+
+### Option 2: Static host (GitHub Pages / Netlify / Vercel / Cloudflare Pages)
+
+1. Push this folder to a Git repository.
+2. Create a new site in your host of choice.
+3. Set the publish directory to the repository root.
+4. Deploy.
+
+No build command is required.
+
+## Play
+
+1. Open the deployed URL (or `http://localhost:8080` when running locally).
+2. Use your keyboard to control the game.
+3. Refresh the page to restart quickly.
