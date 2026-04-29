@@ -44,6 +44,8 @@ export class InputManager {
     this.handleKeyUp = this.handleKeyUp.bind(this);
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseUp = this.handleMouseUp.bind(this);
+    this.handleWindowBlur = this.handleWindowBlur.bind(this);
+    this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
   }
 
   registerListeners() {
@@ -51,6 +53,8 @@ export class InputManager {
     this.targetDocument.addEventListener("keyup", this.handleKeyUp);
     this.targetWindow.addEventListener("mousedown", this.handleMouseDown);
     this.targetWindow.addEventListener("mouseup", this.handleMouseUp);
+    this.targetWindow.addEventListener("blur", this.handleWindowBlur);
+    this.targetDocument.addEventListener("visibilitychange", this.handleVisibilityChange);
   }
 
   unregisterListeners() {
@@ -58,9 +62,25 @@ export class InputManager {
     this.targetDocument.removeEventListener("keyup", this.handleKeyUp);
     this.targetWindow.removeEventListener("mousedown", this.handleMouseDown);
     this.targetWindow.removeEventListener("mouseup", this.handleMouseUp);
+    this.targetWindow.removeEventListener("blur", this.handleWindowBlur);
+    this.targetDocument.removeEventListener("visibilitychange", this.handleVisibilityChange);
   }
 
   beginFrame() {}
+
+  resetAllActions() {
+    for (const action of this.down.keys()) {
+      this.down.set(action, false);
+    }
+
+    for (const action of this.pressed.keys()) {
+      this.pressed.set(action, false);
+    }
+
+    for (const action of this.released.keys()) {
+      this.released.set(action, false);
+    }
+  }
 
   initializeActionState(action) {
     this.down.set(action, false);
@@ -134,5 +154,15 @@ export class InputManager {
       this.released.set("mousePrimary", true);
     }
     this.down.set("mousePrimary", false);
+  }
+
+  handleWindowBlur() {
+    this.resetAllActions();
+  }
+
+  handleVisibilityChange() {
+    if (this.targetDocument.visibilityState === "hidden") {
+      this.resetAllActions();
+    }
   }
 }
