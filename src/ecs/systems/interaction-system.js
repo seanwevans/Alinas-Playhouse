@@ -20,14 +20,27 @@ export class InteractionSystem {
 
     if (!playerPos) return;
 
+    let selectedInteractable = null;
+    let selectedDistance = Infinity;
+
     for (const entity of this.interactables) {
       const interactData = entity.interactable;
-      if (
-        distanceCannonToThree(playerPos, interactData.position) <
-        interactData.radius
-      ) {
-        interactData.onInteract();
+      if (!interactData?.position || !interactData?.radius || !interactData?.onInteract) {
+        continue;
+      }
+
+      const candidateDistance = distanceCannonToThree(playerPos, interactData.position);
+      if (candidateDistance >= interactData.radius) {
+        continue;
+      }
+
+      if (candidateDistance < selectedDistance) {
+        selectedInteractable = interactData;
+        selectedDistance = candidateDistance;
       }
     }
+
+    // Target selection currently prefers the closest valid interactable in range.
+    selectedInteractable?.onInteract();
   }
 }
