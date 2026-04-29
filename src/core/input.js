@@ -43,6 +43,7 @@ export class InputManager {
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.handleKeyUp = this.handleKeyUp.bind(this);
     this.handleMouseDown = this.handleMouseDown.bind(this);
+    this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleMouseUp = this.handleMouseUp.bind(this);
   }
 
@@ -50,6 +51,7 @@ export class InputManager {
     this.targetDocument.addEventListener("keydown", this.handleKeyDown);
     this.targetDocument.addEventListener("keyup", this.handleKeyUp);
     this.targetWindow.addEventListener("mousedown", this.handleMouseDown);
+    this.targetWindow.addEventListener("mousemove", this.handleMouseMove);
     this.targetWindow.addEventListener("mouseup", this.handleMouseUp);
   }
 
@@ -57,6 +59,7 @@ export class InputManager {
     this.targetDocument.removeEventListener("keydown", this.handleKeyDown);
     this.targetDocument.removeEventListener("keyup", this.handleKeyUp);
     this.targetWindow.removeEventListener("mousedown", this.handleMouseDown);
+    this.targetWindow.removeEventListener("mousemove", this.handleMouseMove);
     this.targetWindow.removeEventListener("mouseup", this.handleMouseUp);
   }
 
@@ -115,16 +118,25 @@ export class InputManager {
     this.down.set(action, false);
   }
 
+  updateMousePositionFromEvent(e) {
+    this.mousePosition.x = (e.clientX / this.targetWindow.innerWidth) * 2 - 1;
+    this.mousePosition.y = -(e.clientY / this.targetWindow.innerHeight) * 2 + 1;
+  }
+
   handleMouseDown(e) {
     if (e.button !== 0) return;
 
-    this.mousePosition.x = (e.clientX / this.targetWindow.innerWidth) * 2 - 1;
-    this.mousePosition.y = -(e.clientY / this.targetWindow.innerHeight) * 2 + 1;
+    this.updateMousePositionFromEvent(e);
 
     if (!this.down.get("mousePrimary")) {
       this.pressed.set("mousePrimary", true);
     }
     this.down.set("mousePrimary", true);
+  }
+
+
+  handleMouseMove(e) {
+    this.updateMousePositionFromEvent(e);
   }
 
   handleMouseUp(e) {
