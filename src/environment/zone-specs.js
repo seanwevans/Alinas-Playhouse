@@ -1,10 +1,10 @@
 // Ownership: declarative zone placement specs consumed by zone builders/controllers.
 
 export const UPSTAIRS_BOX_SPECS = [
-  [45, 0.2, 20, 12.5, 0, 0, "upstairsFloor"],
-  [5, 0.2, 20, 47.5, 0, 0, "upstairsFloor"],
-  [10, 0.2, 12.5, 40, 0, -3.75, "upstairsFloor"],
-  [10, 0.2, 4.5, 40, 0, 7.75, "upstairsFloor"],
+  [45, 0.2, 20, 12.5, "fy", 0, "upstairsFloor"],
+  [5, 0.2, 20, 47.5, "fy", 0, "upstairsFloor"],
+  [10, 0.2, 12.5, 40, "fy", -3.75, "upstairsFloor"],
+  [10, 0.2, 4.5, 40, "fy", 7.75, "upstairsFloor"],
   [0.5, 5, 20, -10, "wy", 0, "upstairsWall"],
   [0.5, 5, 20, 50, "wy", 0, "upstairsWall"],
   [60, 5, 0.5, 20, "wy", -10, "upstairsWall"],
