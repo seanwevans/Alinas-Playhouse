@@ -46,7 +46,7 @@ export class Game {
     );
 
     this.systems = [
-      new PlayerInputSystem(this.ecs, this.input),
+      new PlayerInputSystem(this.ecs, this.input, this.camera),
       new PhysicsSyncSystem(this.ecs, this),
       new PlayerAnimationSystem(this.ecs),
       new StudentAnimationSystem(this.ecs),
