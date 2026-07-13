@@ -24,7 +24,7 @@ export function createCookieDogEntity(ecs, scene) {
 
   const buttTriangle = new THREE.Mesh(
     new THREE.ConeGeometry(0.16, 0.22, 3),
-    whiteMat
+    blackMat
   );
   buttTriangle.rotation.x = Math.PI / 2;
   buttTriangle.position.set(-0.54, 0.02, 0);
