@@ -2,8 +2,7 @@
 import * as THREE from "https://esm.sh/three";
 import * as CANNON from "https://esm.sh/cannon-es";
 import { COLORS, PARAMS } from "../config/game-config.js";
-import { playBonk } from "../audio/effects.js";
-import { createBonkSprite, triggerScreenFlash } from "../effects/bonk-effects.js";
+import { runPlayerImpactEffects } from "../effects/effect-service.js";
 import {
   C_Controllable,
   C_FloatingText,
@@ -125,25 +124,22 @@ export function createPlayerEntity(
 
     body.addEventListener("collide", (e) => {
       const impactVelocity = Math.abs(e.contact.getImpactVelocityAlongNormal());
-      if (impactVelocity > 1.5) {
-        const now = performance.now();
-        if (now - lastBonkAt < bonkCooldownMs) return;
-        lastBonkAt = now;
+      if (impactVelocity <= 1.5) return;
 
-        const impactIntensity = THREE.MathUtils.clamp(impactVelocity / 8, 0.75, 1.6);
+      const now = performance.now();
+      if (now - lastBonkAt < bonkCooldownMs) return;
+      lastBonkAt = now;
 
-        playBonk(gameRef.audioCtx, impactVelocity);
-        triggerScreenFlash(impactIntensity);
+      const impactIntensity = THREE.MathUtils.clamp(impactVelocity / 8, 0.75, 1.6);
 
-        const sprite = createBonkSprite();
-        sprite.scale.multiplyScalar(impactIntensity);
-        sprite.position.set(body.position.x, body.position.y + 1.2, body.position.z);
-        gameRef.scene.add(sprite);
-
-        gameRef.ecs.add({
-          floatingText: new C_FloatingText(sprite, 0.8)
-        });
-      }
+      runPlayerImpactEffects({
+        gameRef,
+        impactVelocity,
+        impactIntensity,
+        position: body.position,
+        addFloatingText: (sprite) =>
+          gameRef.ecs.add({ floatingText: new C_FloatingText(sprite, 0.8) })
+      });
     });
   }
   world.addBody(body);
