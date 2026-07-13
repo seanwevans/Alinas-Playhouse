@@ -117,7 +117,7 @@ export function createPlayerEntity(
     fixedRotation: true
   });
 
-  body.position.set(x, isDynamic ? 3 : 0.95, z);
+  body.position.set(x, 0.95, z);
   if (isDynamic && gameRef) {
     let lastBonkAt = 0;
     const bonkCooldownMs = 200;
