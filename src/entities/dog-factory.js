@@ -1,7 +1,12 @@
 import * as THREE from "three";
-import { C_Dog, C_Renderable } from "../ecs/components.js";
+import * as CANNON from "cannon-es";
+import { C_Dog, C_PhysicsBody, C_Renderable } from "../ecs/components.js";
 
-export function createCookieDogEntity(ecs, scene) {
+// Sphere collider approximating the dog's body, so it can't walk through walls
+// and furniture. Its radius is also the dog's resting height above the floor.
+const DOG_COLLIDER_RADIUS = 0.45;
+
+export function createCookieDogEntity(ecs, scene, world) {
   const root = new THREE.Group();
   scene.add(root);
 
@@ -76,10 +81,23 @@ export function createCookieDogEntity(ecs, scene) {
     root.add(leg);
   }
 
-  root.position.set(-1.4, 0.45, 1.1);
+  root.position.set(-1.4, DOG_COLLIDER_RADIUS, 1.1);
+
+  // Low mass so the dog is blocked by (immovable) static furniture without
+  // shoving the player around when it bumps into them; fixedRotation keeps it
+  // upright while the follow system drives its horizontal velocity.
+  const colliderBody = new CANNON.Body({
+    mass: 0.2,
+    shape: new CANNON.Sphere(DOG_COLLIDER_RADIUS),
+    fixedRotation: true,
+    linearDamping: 0.01
+  });
+  colliderBody.position.set(-1.4, DOG_COLLIDER_RADIUS, 1.1);
+  world.addBody(colliderBody);
 
   return ecs.add({
     renderable: new C_Renderable(root),
+    physicsBody: new C_PhysicsBody(colliderBody),
     dog: new C_Dog("Cookie")
   });
 }
