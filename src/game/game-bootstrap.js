@@ -6,21 +6,17 @@ import { COLORS, PARAMS } from "../config/game-config.js";
 import { createPlayerEntity } from "../entities/player-factory.js";
 import { createCookieDogEntity } from "../entities/dog-factory.js";
 import { buildEnvironment } from "../environment/build-environment.js";
-import {
-  DogFollowSystem,
-  PlayerAnimationSystem,
-  PlayerInputSystem,
-  PhysicsSyncSystem,
-  StudentAnimationSystem
-} from "../systems/player-systems.js";
-import {
-  CameraFollowSystem,
-  CharacterSwitchSystem,
-  EnvironmentInteractionSystem,
-  FloatingTextSystem,
-  InteractionSystem,
-  UpstairsVisibilitySystem
-} from "../systems/world-systems.js";
+import { PlayerInputSystem } from "../ecs/systems/player-input-system.js";
+import { PhysicsSyncSystem } from "../ecs/systems/physics-sync-system.js";
+import { PlayerAnimationSystem } from "../ecs/systems/player-animation-system.js";
+import { StudentAnimationSystem } from "../ecs/systems/student-animation-system.js";
+import { DogFollowSystem } from "../ecs/systems/dog-follow-system.js";
+import { InteractionSystem } from "../ecs/systems/interaction-system.js";
+import { UpstairsVisibilitySystem } from "../ecs/systems/upstairs-visibility-system.js";
+import { CharacterSwitchSystem } from "../ecs/systems/character-switch-system.js";
+import { CameraFollowSystem } from "../ecs/systems/camera-follow-system.js";
+import { FloatingTextSystem } from "../ecs/systems/floating-text-system.js";
+import { EnvironmentInteractionSystem } from "../ecs/systems/environment-interaction-system.js";
 import {
   setupAudioUnlock,
   setupWindowLifecycle,
@@ -42,6 +38,13 @@ export class Game {
     this.input = new InputManager();
     this.input.registerListeners();
 
+    this.characterSwitch = new CharacterSwitchSystem(
+      this.ecs,
+      this.camera,
+      this.scene,
+      this.input
+    );
+
     this.systems = [
       new PlayerInputSystem(this.ecs, this.input),
       new PhysicsSyncSystem(this.ecs, this),
@@ -50,7 +53,7 @@ export class Game {
       new DogFollowSystem(this.ecs, this),
       new InteractionSystem(this.ecs, this.input),
       new UpstairsVisibilitySystem(this.ecs),
-      new CharacterSwitchSystem(this.ecs, this.camera, this.scene, this.input),
+      this.characterSwitch,
       new CameraFollowSystem(this.ecs, this.controls),
       new FloatingTextSystem(this.ecs, this.scene)
     ];
@@ -74,6 +77,8 @@ export class Game {
     );
     createCookieDogEntity(this.ecs, this.scene);
 
+    this.registerSelectableCharacters();
+
     setupWindowLifecycle(this);
 
     this.destroyed = false;
@@ -92,6 +97,12 @@ export class Game {
 
     const { physicsWorld } = createPhysicsWorld(this.params);
     this.physicsWorld = physicsWorld;
+  }
+
+  registerSelectableCharacters() {
+    for (const entity of this.ecs.with("controllable", "renderable")) {
+      this.characterSwitch.registerSelectableMesh(entity.renderable.mesh);
+    }
   }
 
   onWindowResize() {
