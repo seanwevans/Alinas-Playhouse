@@ -1,4 +1,4 @@
-import * as THREE from "https://esm.sh/three";
+import * as THREE from "three";
 
 export function triggerScreenFlash(intensity = 1) {
   if (typeof document === "undefined" || !document.body) return;

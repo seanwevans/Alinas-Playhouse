@@ -1,4 +1,4 @@
-import * as CANNON from "https://esm.sh/cannon-es";
+import * as CANNON from "cannon-es";
 
 export function createPhysicsWorld(params) {
   const physicsWorld = new CANNON.World();

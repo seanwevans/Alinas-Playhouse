@@ -1,4 +1,4 @@
-import * as THREE from "https://esm.sh/three";
+import * as THREE from "three";
 
 export function createKitchenController({ scene, colors, params }) {
   const fridgeDoorGrp = new THREE.Group();

@@ -1,6 +1,6 @@
 // Ownership: constructs player visuals/physics + ECS entity wiring for controllable characters.
-import * as THREE from "https://esm.sh/three";
-import * as CANNON from "https://esm.sh/cannon-es";
+import * as THREE from "three";
+import * as CANNON from "cannon-es";
 import { COLORS, PARAMS } from "../config/game-config.js";
 import { runPlayerImpactEffects } from "../effects/effect-service.js";
 import {
