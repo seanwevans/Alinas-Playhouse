@@ -1,6 +1,6 @@
 // Ownership: Game bootstrap/composition root that assembles ECS, systems, environment, and loop.
-import * as THREE from "https://esm.sh/three";
-import { World } from "https://esm.sh/miniplex";
+import * as THREE from "three";
+import { World } from "miniplex";
 import { InputManager } from "../core/input.js";
 import { COLORS, PARAMS } from "../config/game-config.js";
 import { createPlayerEntity } from "../entities/player-factory.js";

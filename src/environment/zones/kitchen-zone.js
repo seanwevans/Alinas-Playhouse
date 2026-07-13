@@ -1,5 +1,5 @@
 // Ownership: kitchen zone builder and appliance state controllers (fridge/sink/stove).
-import * as THREE from "https://esm.sh/three";
+import * as THREE from "three";
 import { COLORS, PARAMS } from "../../config/game-config.js";
 import { C_Interactable } from "../../ecs/components.js";
 import { buildStaticBox } from "../build-primitives.js";

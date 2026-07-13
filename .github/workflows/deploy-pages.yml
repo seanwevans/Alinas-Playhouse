@@ -32,6 +32,8 @@ jobs:
         run: |
           mkdir -p public
           cp index.html playhouse.js public/
+          cp -r src public/
+          cp -r vendor public/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

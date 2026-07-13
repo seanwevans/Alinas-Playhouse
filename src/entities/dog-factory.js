@@ -1,4 +1,4 @@
-import * as THREE from "https://esm.sh/three";
+import * as THREE from "three";
 import { C_Dog, C_Renderable } from "../ecs/components.js";
 
 export function createCookieDogEntity(ecs, scene) {

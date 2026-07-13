@@ -1,5 +1,5 @@
 // Ownership: visual-only transient effects utilities (screen flash + BONK sprite assets).
-import * as THREE from "https://esm.sh/three";
+import * as THREE from "three";
 
 export function createBonkSprite() {
   const canvas = document.createElement("canvas");

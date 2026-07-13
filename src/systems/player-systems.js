@@ -1,5 +1,5 @@
 // Ownership: player motion/physics sync/pose systems for character entities.
-import * as THREE from "https://esm.sh/three";
+import * as THREE from "three";
 import { PARAMS } from "../config/game-config.js";
 import { playDogBark, playScream } from "../audio/effects.js";
 import {

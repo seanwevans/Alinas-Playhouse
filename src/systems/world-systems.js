@@ -1,5 +1,5 @@
 // Ownership: world interaction/camera/visibility/floating-text runtime systems.
-import * as THREE from "https://esm.sh/three";
+import * as THREE from "three";
 import { PARAMS } from "../config/game-config.js";
 import { distanceCannonToThree } from "../core/math.js";
 
