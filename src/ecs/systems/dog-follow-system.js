@@ -1,6 +1,11 @@
 import * as THREE from "three";
 import { playDogBark } from "../../audio/effects.js";
 
+// The player's mesh position tracks its physics-body centre, which sits this far
+// above the floor it stands on. Dropping the dog by the same amount keeps it at
+// floor level (its own resting height) instead of floating up at body height.
+const DOG_GROUND_DROP = 0.45;
+
 export class DogFollowSystem {
   constructor(ecs, gameRef) {
     this.dogs = ecs.with("dog", "renderable");
@@ -25,9 +30,10 @@ export class DogFollowSystem {
       const dog = dogEntity.dog;
       const dogMesh = dogEntity.renderable.mesh;
 
-      this.desiredPos.set(0, 0.45, dog.followDistance);
+      this.desiredPos.set(0, 0, dog.followDistance);
       this.desiredPos.applyAxisAngle(new THREE.Vector3(0, 1, 0), playerMesh.rotation.y);
       this.desiredPos.add(playerMesh.position);
+      this.desiredPos.y = playerMesh.position.y - DOG_GROUND_DROP;
 
       dogMesh.position.lerp(this.desiredPos, dog.followLerp);
 
