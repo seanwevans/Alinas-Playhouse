@@ -17,6 +17,8 @@ import { CharacterSwitchSystem } from "../ecs/systems/character-switch-system.js
 import { CameraFollowSystem } from "../ecs/systems/camera-follow-system.js";
 import { FloatingTextSystem } from "../ecs/systems/floating-text-system.js";
 import { EnvironmentInteractionSystem } from "../ecs/systems/environment-interaction-system.js";
+import { GameControlSystem } from "../ecs/systems/game-control-system.js";
+import { InteractionHintSystem } from "../ecs/systems/interaction-hint-system.js";
 import {
   setupAudioUnlock,
   setupWindowLifecycle,
@@ -32,6 +34,7 @@ export class Game {
     this.clock = new THREE.Clock();
     this.initThreeAndCannon();
     this.audioCtx = null;
+    this.muted = false;
     setupAudioUnlock(this);
 
     this.ecs = new World();
@@ -47,11 +50,13 @@ export class Game {
 
     this.systems = [
       new PlayerInputSystem(this.ecs, this.input, this.camera),
+      new GameControlSystem(this.ecs, this.input, this),
       new PhysicsSyncSystem(this.ecs, this),
       new PlayerAnimationSystem(this.ecs),
       new StudentAnimationSystem(this.ecs),
       new DogFollowSystem(this.ecs, this),
       new InteractionSystem(this.ecs, this.input),
+      new InteractionHintSystem(this.ecs),
       new UpstairsVisibilitySystem(this.ecs),
       this.characterSwitch,
       new CameraFollowSystem(this.ecs, this.controls),

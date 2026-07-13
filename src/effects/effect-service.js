@@ -9,7 +9,7 @@ export function runPlayerImpactEffects({
   position,
   addFloatingText
 }) {
-  playBonk(gameRef.audioCtx, impactVelocity);
+  if (!gameRef.muted) playBonk(gameRef.audioCtx, impactVelocity);
   triggerScreenFlash(impactIntensity);
 
   const sprite = createBonkSprite();

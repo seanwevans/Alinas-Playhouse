@@ -50,7 +50,7 @@ export class DogFollowSystem {
       dog.barkTimer += dt;
       if (dog.barkTimer >= dog.nextBarkAt) {
         const intensity = 0.85 + Math.random() * 0.35;
-        playDogBark(this.gameRef.audioCtx, intensity);
+        if (!this.gameRef.muted) playDogBark(this.gameRef.audioCtx, intensity);
         dog.barkTimer = 0;
         dog.nextBarkAt =
           dog.minBarkInterval +
