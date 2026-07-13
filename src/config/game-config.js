@@ -2,7 +2,7 @@ import * as THREE from "three";
 
 export const PARAMS = {
   Player: {
-    moveSpeed: 10,
+    moveSpeed: 13,
     jumpForce: 8,
     groundedVelocityY: 0.2,
     turnLerp: 0.15,
