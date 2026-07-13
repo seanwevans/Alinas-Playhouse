@@ -13,15 +13,6 @@ export function distanceCannonToThree(cannonVec, threeVec) {
   return Math.sqrt(dx * dx + dy * dy + dz * dz);
 }
 
-export function normalize2D(x, z) {
-  const length = Math.hypot(x, z);
-  if (length === 0) {
-    return { x: 0, z: 0 };
-  }
-
-  return { x: x / length, z: z / length };
-}
-
 export function shortestAngleDelta(from, to) {
   let diff = to - from;
   while (diff < -Math.PI) diff += Math.PI * 2;
