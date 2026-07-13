@@ -80,7 +80,7 @@ export class Game {
       true,
       this
     );
-    createCookieDogEntity(this.ecs, this.scene);
+    createCookieDogEntity(this.ecs, this.scene, this.physicsWorld);
 
     this.registerSelectableCharacters();
 
