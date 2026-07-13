@@ -1,7 +1,7 @@
 // Ownership: bedroom zone builder + local interactable controllers.
 import * as THREE from "three";
 import * as CANNON from "cannon-es";
-import { COLORS, LAYOUT, PARAMS } from "../../config/game-config.js";
+import { COLORS, PARAMS } from "../../config/game-config.js";
 import { C_Interactable } from "../../ecs/components.js";
 import { buildChair, buildStaticBox } from "../build-primitives.js";
 
@@ -29,11 +29,6 @@ export function buildBedroomZone(ecs, scene, world, config) {
 
   floorBody.position.set(20, -0.5, 0);
   world.addBody(floorBody);
-
-  const h = LAYOUT.walls.height;
-  const th = LAYOUT.walls.thickness;
-  void h;
-  void th;
 
   buildStaticBox(scene, world, 3, 0.5, 4, -6, 0.5, -6, COLORS.bedBase);
   buildStaticBox(scene, world, 3, 0.2, 4.2, -6, 0.1, -6, COLORS.bedWood);
