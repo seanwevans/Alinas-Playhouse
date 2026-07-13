@@ -2,6 +2,7 @@
 import * as THREE from "three";
 import { World } from "miniplex";
 import { InputManager } from "../core/input.js";
+import { setupTouchControls } from "../core/touch-controls.js";
 import { COLORS, PARAMS } from "../config/game-config.js";
 import { createPlayerEntity } from "../entities/player-factory.js";
 import { createCookieDogEntity } from "../entities/dog-factory.js";
@@ -40,6 +41,7 @@ export class Game {
     this.ecs = new World();
     this.input = new InputManager();
     this.input.registerListeners();
+    this.touchControls = setupTouchControls(this.input);
 
     this.characterSwitch = new CharacterSwitchSystem(
       this.ecs,
@@ -126,6 +128,7 @@ export class Game {
     this.destroyed = true;
 
     this.input.unregisterListeners();
+    if (this.touchControls) this.touchControls.destroy();
     teardownWindowLifecycle(this);
 
     if (this.renderer && this.renderer.domElement.parentNode) {

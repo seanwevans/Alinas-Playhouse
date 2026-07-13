@@ -116,6 +116,24 @@ export class InputManager {
     return this.mousePosition;
   }
 
+  // Drive an action's state from a non-keyboard source (e.g. on-screen touch
+  // buttons). Mirrors the keydown/keyup edge handling.
+  pressAction(action) {
+    if (!this.down.has(action)) return;
+    if (!this.down.get(action)) {
+      this.pressed.set(action, true);
+    }
+    this.down.set(action, true);
+  }
+
+  releaseAction(action) {
+    if (!this.down.has(action)) return;
+    if (this.down.get(action)) {
+      this.released.set(action, true);
+    }
+    this.down.set(action, false);
+  }
+
   handleKeyDown(e) {
     if (PREVENT_DEFAULT_CODES.has(e.code)) {
       e.preventDefault();
