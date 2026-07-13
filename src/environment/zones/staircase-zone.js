@@ -1,6 +1,6 @@
 // Ownership: staircase geometry + ramp collider zone builder.
-import * as THREE from "https://esm.sh/three";
-import * as CANNON from "https://esm.sh/cannon-es";
+import * as THREE from "three";
+import * as CANNON from "cannon-es";
 import { COLORS } from "../../config/game-config.js";
 
 export function buildStaircaseZone(ecs, scene, world, config) {

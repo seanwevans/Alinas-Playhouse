@@ -1,6 +1,6 @@
 // Ownership: low-level reusable geometry/physics builders shared by zone builders.
-import * as THREE from "https://esm.sh/three";
-import * as CANNON from "https://esm.sh/cannon-es";
+import * as THREE from "three";
+import * as CANNON from "cannon-es";
 import { PARAMS } from "../config/game-config.js";
 import { copyThreeVec3ToCannon } from "../core/math.js";
 import { C_UpstairsElement } from "../ecs/components.js";

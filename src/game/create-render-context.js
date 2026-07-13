@@ -1,5 +1,5 @@
-import * as THREE from "https://esm.sh/three";
-import { OrbitControls } from "https://esm.sh/three/addons/controls/OrbitControls.js";
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 export function createRenderContext({ colors, params }) {
   const scene = new THREE.Scene();

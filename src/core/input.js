@@ -1,4 +1,4 @@
-import * as THREE from "https://esm.sh/three";
+import * as THREE from "three";
 
 const ACTION_KEY_BINDINGS = {
   moveForward: ["ArrowUp", "KeyW"],

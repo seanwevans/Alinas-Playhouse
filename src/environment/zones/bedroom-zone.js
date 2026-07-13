@@ -1,6 +1,6 @@
 // Ownership: bedroom zone builder + local interactable controllers.
-import * as THREE from "https://esm.sh/three";
-import * as CANNON from "https://esm.sh/cannon-es";
+import * as THREE from "three";
+import * as CANNON from "cannon-es";
 import { COLORS, LAYOUT, PARAMS } from "../../config/game-config.js";
 import { C_Interactable } from "../../ecs/components.js";
 import { buildChair, buildStaticBox } from "../build-primitives.js";
