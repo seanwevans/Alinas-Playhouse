@@ -23,7 +23,7 @@ export class PhysicsSyncSystem {
         !entity.player.hasScreamed
       ) {
         entity.player.hasScreamed = true;
-        if (this.gameRef && this.gameRef.audioCtx) {
+        if (this.gameRef && this.gameRef.audioCtx && !this.gameRef.muted) {
           playScream(this.gameRef.audioCtx);
         }
       }

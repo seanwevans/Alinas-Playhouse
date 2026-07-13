@@ -8,7 +8,9 @@ const ACTION_KEY_BINDINGS = {
   jump: ["Space"],
   sit: ["KeyE"],
   lay: ["KeyQ"],
-  interact: ["KeyF"]
+  interact: ["KeyF"],
+  mute: ["KeyM"],
+  reset: ["KeyR"]
 };
 
 const PREVENT_DEFAULT_CODES = new Set([
