@@ -30,7 +30,7 @@ export class DogFollowSystem {
       const dog = dogEntity.dog;
       const dogMesh = dogEntity.renderable.mesh;
 
-      this.desiredPos.set(0, 0, dog.followDistance);
+      this.desiredPos.set(0, 0, -dog.followDistance);
       this.desiredPos.applyAxisAngle(new THREE.Vector3(0, 1, 0), playerMesh.rotation.y);
       this.desiredPos.add(playerMesh.position);
       this.desiredPos.y = playerMesh.position.y - DOG_GROUND_DROP;
