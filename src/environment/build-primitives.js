@@ -48,7 +48,8 @@ export function buildUpstairsBox(
   x,
   y,
   z,
-  color
+  color,
+  level = 1
 ) {
   const mat = new THREE.MeshStandardMaterial({
     color,
@@ -68,7 +69,7 @@ export function buildUpstairsBox(
   copyThreeVec3ToCannon(body.position, mesh.position);
   world.addBody(body);
 
-  ecs.add({ upstairsElement: new C_UpstairsElement(mat, mesh) });
+  ecs.add({ upstairsElement: new C_UpstairsElement(mat, mesh, level) });
 }
 
 export function buildChair(scene, world, x, z, color, rotationY) {
