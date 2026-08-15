@@ -42,7 +42,7 @@ export const PARAMS = {
     ambientIntensity: 0.6,
     dirIntensity: 0.8,
     interactRadius: 4,
-    upstairsThresholdY: 3.0,
+    floorRevealThresholdsY: [3.0, 8.0],
     upstairsLerp: 0.05,
     opacityVisible: 1.0,
     opacityHidden: 0.1,
@@ -122,21 +122,47 @@ export const COLORS = {
   upstairsTrimDark: "#333333",
   upstairsTrimBlack: "#111111",
   upstairsAccentRed: "#dc143c",
-  upstairsAccentWood: "#d2b48c"
+  upstairsAccentWood: "#d2b48c",
+
+  atticFloor: "#f0e6d2",
+  atticWall: "#ffe4b5",
+  atticBeam: "#6b4423",
+  atticTrimLight: "#c19a6b",
+  atticRug: "#7fffd4",
+  atticAccentWood: "#cd853f",
+  atticAccentTeal: "#20b2aa",
+  atticWindow: "#bfefff"
 };
 
 export const LAYOUT = {
   walls: { height: 5, thickness: 0.5 },
-  stairs: {
-    count: 20,
-    depth: 0.5,
-    height: 0.25,
-    width: 3,
-    startX: 35,
-    startZ: 4
-  },
+  staircases: [
+    {
+      count: 20,
+      depth: 0.5,
+      height: 0.25,
+      width: 3,
+      startX: 35,
+      startZ: 4,
+      baseY: 0
+    },
+    {
+      count: 20,
+      depth: 0.5,
+      height: 0.25,
+      width: 3,
+      startX: 15,
+      startZ: -6.5,
+      baseY: 5.0,
+      fadeLevel: 2
+    }
+  ],
   upstairs: {
     floorY: 5.0,
+    wallYOffset: 2.5
+  },
+  attic: {
+    floorY: 10.0,
     wallYOffset: 2.5
   }
 };

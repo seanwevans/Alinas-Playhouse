@@ -1,51 +1,65 @@
+// Ownership: per-floor reveal state for elevated zones (upstairs, attic) + their fade/shadow toggles.
 import * as THREE from "three";
 import { PARAMS } from "../../config/game-config.js";
 
 export class UpstairsVisibilitySystem {
   constructor(ecs) {
-    this.upstairsOpacity = PARAMS.World.opacityHidden;
-    this.shadowsEnabled = false;
+    this.levels = PARAMS.World.floorRevealThresholdsY.map((thresholdY) => ({
+      thresholdY,
+      opacity: PARAMS.World.opacityHidden,
+      isFullyOpaque: false,
+      shadowsEnabled: false,
+      shadowStateChanged: false
+    }));
 
     this.players = ecs.with("controllable", "physicsBody");
     this.upstairsElements = ecs.with("upstairsElement");
   }
 
+  levelFor(element) {
+    const index = Math.min(Math.max(element.level, 1), this.levels.length) - 1;
+    return this.levels[index];
+  }
+
   update() {
-    let isUpstairs = false;
+    let activePlayerY = -Infinity;
     for (const entity of this.players) {
       if (entity.controllable.active) {
-        if (entity.physicsBody.body.position.y > PARAMS.World.upstairsThresholdY) {
-          isUpstairs = true;
-        }
+        activePlayerY = entity.physicsBody.body.position.y;
         break;
       }
     }
 
-    const targetOpacity = isUpstairs
-      ? PARAMS.World.opacityVisible
-      : PARAMS.World.opacityHidden;
+    for (const level of this.levels) {
+      const targetOpacity =
+        activePlayerY > level.thresholdY
+          ? PARAMS.World.opacityVisible
+          : PARAMS.World.opacityHidden;
 
-    this.upstairsOpacity = THREE.MathUtils.lerp(
-      this.upstairsOpacity,
-      targetOpacity,
-      PARAMS.World.upstairsLerp
-    );
+      level.opacity = THREE.MathUtils.lerp(
+        level.opacity,
+        targetOpacity,
+        PARAMS.World.upstairsLerp
+      );
 
-    const isFullyOpaque = this.upstairsOpacity > PARAMS.World.opacityOpaqueReq;
-    const enableShadows = this.upstairsOpacity > PARAMS.World.opacityShadowReq;
+      level.isFullyOpaque = level.opacity > PARAMS.World.opacityOpaqueReq;
 
-    const shadowStateChanged = this.shadowsEnabled !== enableShadows;
-    this.shadowsEnabled = enableShadows;
+      const enableShadows = level.opacity > PARAMS.World.opacityShadowReq;
+      level.shadowStateChanged = level.shadowsEnabled !== enableShadows;
+      level.shadowsEnabled = enableShadows;
+    }
 
     for (const entity of this.upstairsElements) {
       const el = entity.upstairsElement;
-      el.material.opacity = this.upstairsOpacity;
-      el.material.transparent = !isFullyOpaque;
-      el.material.depthWrite = isFullyOpaque;
+      const level = this.levelFor(el);
 
-      if (shadowStateChanged) {
-        el.mesh.castShadow = enableShadows;
-        el.mesh.receiveShadow = enableShadows;
+      el.material.opacity = level.opacity;
+      el.material.transparent = !level.isFullyOpaque;
+      el.material.depthWrite = level.isFullyOpaque;
+
+      if (level.shadowStateChanged) {
+        el.mesh.castShadow = level.shadowsEnabled;
+        el.mesh.receiveShadow = level.shadowsEnabled;
       }
     }
   }

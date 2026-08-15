@@ -35,6 +35,21 @@ No build command is required.
 - Environment composition is canonical in `src/environment/` (zones + specs + builders).
 - `src/world/` is retained only for legacy artifacts and should not be used for new composition paths.
 
+### Floors
+
+The house has three levels, each connected by a staircase configured in `LAYOUT.staircases`:
+
+| Level | Zone | Floor Y | Contents |
+| --- | --- | --- | --- |
+| Ground | `bedroom-zone.js`, `classroom-zone.js`, `kitchen-zone.js` | 0 | Bed, desk/PC, lamp, classroom, kitchen |
+| Second | `upstairs-zone.js` | 5 | Landing and lounge |
+| Third | `attic-zone.js` | 10 | Attic playroom: rug, play table, toy chest, bookshelf, dormer windows |
+
+Elevated floors fade in as the active character climbs. Each faded element carries a
+level on `C_UpstairsElement`, and `UpstairsVisibilitySystem` reveals level *n* once the
+player passes `PARAMS.World.floorRevealThresholdsY[n - 1]`, so the second floor appears
+on the way upstairs and the attic only once you are near the top of the second flight.
+
 ## Play
 
 1. Open the deployed URL (or `http://localhost:8080` when running locally).

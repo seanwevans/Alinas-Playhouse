@@ -1,5 +1,6 @@
 // Ownership: top-level zone composition order + shared environment handle aggregation.
 import { COLORS, LAYOUT, PARAMS } from "../config/game-config.js";
+import { buildAtticZone } from "./zones/attic-zone.js";
 import { buildBedroomZone } from "./zones/bedroom-zone.js";
 import { buildClassroomZone } from "./zones/classroom-zone.js";
 import { buildKitchenZone } from "./zones/kitchen-zone.js";
@@ -20,12 +21,14 @@ export function buildEnvironment(ecs, scene, world, config = {}) {
   const kitchenHandles = buildKitchenZone(ecs, scene, world, mergedConfig);
   const staircaseHandles = buildStaircaseZone(ecs, scene, world, mergedConfig);
   const upstairsHandles = buildUpstairsZone(ecs, scene, world, mergedConfig);
+  const atticHandles = buildAtticZone(ecs, scene, world, mergedConfig);
 
   return {
     ...bedroomHandles,
     ...classroomHandles,
     ...kitchenHandles,
     ...staircaseHandles,
-    ...upstairsHandles
+    ...upstairsHandles,
+    ...atticHandles
   };
 }

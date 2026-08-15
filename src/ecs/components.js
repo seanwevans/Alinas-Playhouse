@@ -45,9 +45,10 @@ export class C_Interactable {
 }
 
 export class C_UpstairsElement {
-  constructor(material, mesh) {
+  constructor(material, mesh, level = 1) {
     this.material = material;
     this.mesh = mesh;
+    this.level = level;
   }
 }
 
